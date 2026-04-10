@@ -2,17 +2,12 @@
 """
 GitHub Webhook Listener for Auto-Deploy
 
-Listens for push events from GitHub and triggers deploy.sh
+Handles:
+- push events: update telegraf/promtail configs
+- release events: update inverter-control and inverter-dashboard
 
 Run with: python server.py
 Or as Docker container alongside other services.
-
-GitHub Webhook setup:
-1. Go to repo Settings → Webhooks → Add webhook
-2. Payload URL: https://your-argo-domain.com/webhook
-3. Content type: application/json
-4. Secret: your-webhook-secret (set in .env)
-5. Events: Just the push event
 """
 
 import os
@@ -30,6 +25,9 @@ logger = logging.getLogger(__name__)
 WEBHOOK_SECRET = os.environ.get('WEBHOOK_SECRET', '')
 DEPLOY_SCRIPT = os.environ.get('DEPLOY_SCRIPT', '/app/deploy-local.sh')
 ALLOWED_BRANCHES = ['main', 'master']
+
+# SSH config for Cerbo (mounted from host or configured in container)
+CERBO_HOST = os.environ.get('CERBO_HOST', 'Cerbo')
 
 
 def verify_signature(payload: bytes, signature: str) -> bool:
@@ -50,6 +48,63 @@ def verify_signature(payload: bytes, signature: str) -> bool:
     return hmac.compare_digest(expected, signature)
 
 
+def run_command(cmd: list, timeout: int = 300) -> tuple:
+    """Run command and return (success, output)"""
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        return result.returncode == 0, result.stdout + result.stderr
+    except subprocess.TimeoutExpired:
+        return False, "Command timed out"
+    except Exception as e:
+        return False, str(e)
+
+
+def update_inverter_control(tag: str) -> tuple:
+    """Update inverter-control on Cerbo via SSH"""
+    logger.info(f"Updating inverter-control to {tag}")
+    
+    # Use SSH to update on Cerbo
+    # Cerbo doesn't have git, so we use curl to download files
+    commands = [
+        # Download updated files
+        f"cd /data/inverter-control && "
+        f"for f in main.py config.py victron.py homeassistant.py mqtt_bridge.py ui_config.py keepalive.py console_server.py version; do "
+        f"curl -sL 'https://raw.githubusercontent.com/victron-venus/inverter-control/{tag}/'$f -o $f.new 2>/dev/null && mv $f.new $f; "
+        f"done",
+        # Restart service
+        "svc -t /service/inverter-control"
+    ]
+    
+    for cmd in commands:
+        success, output = run_command(['ssh', CERBO_HOST, cmd])
+        if not success:
+            return False, f"Failed: {output}"
+    
+    return True, f"Updated to {tag}"
+
+
+def update_inverter_dashboard(tag: str) -> tuple:
+    """Trigger inverter-dashboard self-update"""
+    logger.info(f"Triggering inverter-dashboard update to {tag}")
+    
+    # inverter-dashboard has self-update mechanism
+    # We just need to send MQTT command or wait for it to auto-update
+    # For now, restart the container to trigger update on startup
+    success, output = run_command([
+        'curl', '-s', '--unix-socket', '/var/run/docker.sock',
+        '-X', 'POST', 'http://localhost/containers/inverter-dashboard/restart'
+    ], timeout=60)
+    
+    if success:
+        return True, f"Restarted dashboard container to update to {tag}"
+    return False, output
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
@@ -68,54 +123,93 @@ def webhook():
     # Parse event
     event = request.headers.get('X-GitHub-Event', '')
     payload = request.json
+    repo = payload.get('repository', {}).get('name', '')
     
-    if event != 'push':
-        logger.info(f"Ignoring event: {event}")
-        return jsonify({'status': 'ignored', 'event': event})
+    logger.info(f"Received {event} event for {repo}")
     
-    # Check branch
-    ref = payload.get('ref', '')
-    branch = ref.replace('refs/heads/', '')
-    
-    if branch not in ALLOWED_BRANCHES:
-        logger.info(f"Ignoring push to branch: {branch}")
-        return jsonify({'status': 'ignored', 'branch': branch})
-    
-    # Get commit info
-    commits = payload.get('commits', [])
-    pusher = payload.get('pusher', {}).get('name', 'unknown')
-    
-    logger.info(f"Received push to {branch} by {pusher} ({len(commits)} commits)")
-    
-    # Trigger deploy
-    try:
-        result = subprocess.run(
-            [DEPLOY_SCRIPT],
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 min timeout
-        )
+    # Handle release events
+    if event == 'release':
+        action = payload.get('action', '')
+        if action != 'published':
+            logger.info(f"Ignoring release action: {action}")
+            return jsonify({'status': 'ignored', 'action': action})
         
-        if result.returncode == 0:
-            logger.info("Deploy successful")
-            return jsonify({
-                'status': 'deployed',
-                'branch': branch,
-                'commits': len(commits)
-            })
+        release = payload.get('release', {})
+        tag = release.get('tag_name', '')
+        
+        if not tag:
+            return jsonify({'status': 'ignored', 'reason': 'no tag'})
+        
+        logger.info(f"Processing release {tag} for {repo}")
+        
+        results = {}
+        
+        if repo == 'inverter-control':
+            success, msg = update_inverter_control(tag)
+            results['inverter-control'] = {'success': success, 'message': msg}
+        
+        elif repo == 'inverter-dashboard':
+            success, msg = update_inverter_dashboard(tag)
+            results['inverter-dashboard'] = {'success': success, 'message': msg}
+        
         else:
-            logger.error(f"Deploy failed: {result.stderr}")
-            return jsonify({
-                'status': 'failed',
-                'error': result.stderr
-            }), 500
+            return jsonify({'status': 'ignored', 'repo': repo})
+        
+        status = 'deployed' if all(r['success'] for r in results.values()) else 'partial'
+        return jsonify({'status': status, 'tag': tag, 'results': results})
+    
+    # Handle push events (for monitoring config)
+    if event == 'push':
+        ref = payload.get('ref', '')
+        branch = ref.replace('refs/heads/', '')
+        
+        if branch not in ALLOWED_BRANCHES:
+            logger.info(f"Ignoring push to branch: {branch}")
+            return jsonify({'status': 'ignored', 'branch': branch})
+        
+        # Only for inverter-monitoring repo
+        if repo != 'inverter-monitoring':
+            logger.info(f"Ignoring push to repo: {repo}")
+            return jsonify({'status': 'ignored', 'repo': repo})
+        
+        commits = payload.get('commits', [])
+        pusher = payload.get('pusher', {}).get('name', 'unknown')
+        
+        logger.info(f"Received push to {branch} by {pusher} ({len(commits)} commits)")
+        
+        # Trigger deploy for monitoring configs
+        try:
+            result = subprocess.run(
+                [DEPLOY_SCRIPT],
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
             
-    except subprocess.TimeoutExpired:
-        logger.error("Deploy timed out")
-        return jsonify({'status': 'timeout'}), 500
-    except Exception as e:
-        logger.error(f"Deploy error: {e}")
-        return jsonify({'status': 'error', 'error': str(e)}), 500
+            if result.returncode == 0:
+                logger.info("Deploy successful")
+                return jsonify({
+                    'status': 'deployed',
+                    'branch': branch,
+                    'commits': len(commits)
+                })
+            else:
+                logger.error(f"Deploy failed: {result.stderr}")
+                return jsonify({
+                    'status': 'failed',
+                    'error': result.stderr
+                }), 500
+                
+        except subprocess.TimeoutExpired:
+            logger.error("Deploy timed out")
+            return jsonify({'status': 'timeout'}), 500
+        except Exception as e:
+            logger.error(f"Deploy error: {e}")
+            return jsonify({'status': 'error', 'error': str(e)}), 500
+    
+    # Ignore other events
+    logger.info(f"Ignoring event: {event}")
+    return jsonify({'status': 'ignored', 'event': event})
 
 
 if __name__ == '__main__':

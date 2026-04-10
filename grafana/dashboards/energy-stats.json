@@ -1,0 +1,352 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "title": "Solar Production by Source (kWh)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 12, "x": 0, "y": 0},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""},
+        "orientation": "vertical",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"mppt_0_daily_kwh\" or r._field == \"mppt_1_daily_kwh\" or r._field == \"mppt_2_daily_kwh\" or r._field == \"tasmota_0_daily_kwh\" or r._field == \"tasmota_1_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: if r._field == \"mppt_0_daily_kwh\" then \"MPPT-0\" else if r._field == \"mppt_1_daily_kwh\" then \"MPPT-1\" else if r._field == \"mppt_2_daily_kwh\" then \"MPPT-2\" else if r._field == \"tasmota_0_daily_kwh\" then \"Tasmota-1\" else \"Tasmota-2\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Energy Balance (kWh)",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 12, "x": 12, "y": 0},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""},
+        "orientation": "vertical",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"battery_in_daily_kwh\" or r._field == \"battery_out_daily_kwh\" or r._field == \"consumption_daily_kwh\" or r._field == \"grid_in_daily_kwh\" or r._field == \"grid_out_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: if r._field == \"battery_in_daily_kwh\" then \"Battery In\" else if r._field == \"battery_out_daily_kwh\" then \"Battery Out\" else if r._field == \"consumption_daily_kwh\" then \"Consumption\" else if r._field == \"grid_in_daily_kwh\" then \"Grid Import\" else \"Grid Export\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Power by Source (W)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "showPoints": "never",
+            "stacking": {"mode": "normal"}
+          },
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "right"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"mppt_0_power\" or r._field == \"mppt_1_power\" or r._field == \"mppt_2_power\" or r._field == \"tasmota_0_power\" or r._field == \"tasmota_1_power\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r._field == \"mppt_0_power\" then \"MPPT-0\" else if r._field == \"mppt_1_power\" then \"MPPT-1\" else if r._field == \"mppt_2_power\" then \"MPPT-2\" else if r._field == \"tasmota_0_power\" then \"Tasmota-1\" else \"Tasmota-2\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Battery Power (W)",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "showPoints": "never"
+          },
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 0}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Charging (In)"},
+            "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Discharging (Out)"},
+            "properties": [{"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}}]
+          }
+        ]
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "right"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "charging = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_power\")\n  |> filter(fn: (r) => r._value > 0)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"Charging (In)\"}))\n  |> drop(columns: [\"host\"])\n\ndischarging = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_power\")\n  |> filter(fn: (r) => r._value < 0)\n  |> map(fn: (r) => ({r with _value: -r._value}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"Discharging (Out)\"}))\n  |> drop(columns: [\"host\"])\n\nunion(tables: [charging, discharging])"
+        }
+      ]
+    },
+    {
+      "title": "Energy Sources Over Time",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watth",
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "showPoints": "never",
+            "stacking": {"mode": "normal"}
+          },
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Solar"},
+            "properties": [{"id": "color", "value": {"fixedColor": "yellow", "mode": "fixed"}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Battery"},
+            "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Grid"},
+            "properties": [{"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}]
+          }
+        ]
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "right"}},
+      "targets": [
+        {
+          "refId": "Solar",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"solar_total\")\n  |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * 1.0, _field: \"Solar\"}))\n  |> drop(columns: [\"host\"])"
+        },
+        {
+          "refId": "Battery",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_power\")\n  |> filter(fn: (r) => r._value < 0)\n  |> map(fn: (r) => ({r with _value: -r._value}))\n  |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * 1.0, _field: \"Battery\"}))\n  |> drop(columns: [\"host\"])"
+        },
+        {
+          "refId": "Grid",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_power\")\n  |> filter(fn: (r) => r._value > 0)\n  |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value / 1000.0 * 1.0, _field: \"Grid\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Daily Solar Production by Source",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "color": {"mode": "palette-classic"}
+        }
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "right"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"mppt_0_daily_kwh\" or r._field == \"mppt_1_daily_kwh\" or r._field == \"mppt_2_daily_kwh\" or r._field == \"tasmota_0_daily_kwh\" or r._field == \"tasmota_1_daily_kwh\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r._field == \"mppt_0_daily_kwh\" then \"MPPT-0\" else if r._field == \"mppt_1_daily_kwh\" then \"MPPT-1\" else if r._field == \"mppt_2_daily_kwh\" then \"MPPT-2\" else if r._field == \"tasmota_0_daily_kwh\" then \"Tasmota-1\" else \"Tasmota-2\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Battery In/Out Daily",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Battery In"},
+            "properties": [{"id": "color", "value": {"fixedColor": "green", "mode": "fixed"}}]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Battery Out"},
+            "properties": [{"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}}]
+          }
+        ]
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "right"}},
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"battery_in_daily_kwh\" or r._field == \"battery_out_daily_kwh\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: if r._field == \"battery_in_daily_kwh\" then \"Battery In\" else \"Battery Out\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Total Solar Production",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 28},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "color": {"fixedColor": "yellow", "mode": "fixed"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "yellow", "value": null}]}
+        }
+      },
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Total Solar\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Total Consumption",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 28},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "color": {"fixedColor": "blue", "mode": "fixed"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+        }
+      },
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"consumption_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _field: \"Consumption\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    },
+    {
+      "title": "Grid Balance",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 28},
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kWh",
+          "decimals": 2,
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "red", "value": 0}
+            ]
+          }
+        }
+      },
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"], "fields": ""},
+        "textMode": "value_and_name",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {"type": "influxdb", "uid": "influxdb"},
+          "query": "gridIn = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_in_daily_kwh\")\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\ngridOut = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_out_daily_kwh\")\n  |> last()\n  |> findRecord(fn: (key) => true, idx: 0)\n\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_in_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _value: gridOut._value - gridIn._value, _field: \"Net Grid (+ = export)\"}))\n  |> drop(columns: [\"host\"])"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["energy", "solar", "battery"],
+  "templating": {"list": []},
+  "time": {"from": "now/d", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Energy Statistics",
+  "uid": "energy-stats",
+  "version": 1,
+  "weekStart": ""
+}

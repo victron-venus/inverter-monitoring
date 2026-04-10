@@ -14,9 +14,11 @@ services:
     environment:
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - DEPLOY_SCRIPT=/app/deploy-local.sh
+      - CERBO_HOST=Cerbo
     volumes:
       - .:/deploy:rw
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./ssh-root:/root/.ssh:ro
     networks:
       - monitoring
     profiles:

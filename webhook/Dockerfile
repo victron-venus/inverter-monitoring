@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
+    openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir flask gunicorn
