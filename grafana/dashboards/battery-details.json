@@ -10,19 +10,17 @@
     {
       "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
       "id": 100,
-      "title": "Chain 1 - Overview",
+      "title": "Chain Overview",
       "type": "row"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "thresholds"}, "mappings": [], "max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "#FF6B6B", "value": null}, {"color": "#FFE66D", "value": 20}, {"color": "#4ECDC4", "value": 50}, {"color": "#95E1D3", "value": 80}]}, "unit": "percent"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "max": 100, "min": 0, "thresholds": {"mode": "absolute", "steps": [{"color": "#FF6B6B", "value": null}, {"color": "#FFE66D", "value": 20}, {"color": "#4ECDC4", "value": 50}, {"color": "#95E1D3", "value": 80}]}, "unit": "percent"}},
       "gridPos": {"h": 4, "w": 3, "x": 0, "y": 1},
       "id": 1,
       "options": {"orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic == \"battery/sensor/soc_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "SOC",
+      "title": "C1 SOC",
       "type": "gauge"
     },
     {
@@ -32,7 +30,7 @@
       "id": 2,
       "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic == \"battery/sensor/voltage_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "Voltage",
+      "title": "C1 Voltage",
       "type": "stat"
     },
     {
@@ -42,7 +40,7 @@
       "id": 3,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic == \"battery/sensor/current_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "Current",
+      "title": "C1 Current",
       "type": "stat"
     },
     {
@@ -52,7 +50,7 @@
       "id": 4,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic == \"battery/sensor/power_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "Power",
+      "title": "C1 Power",
       "type": "stat"
     },
     {
@@ -62,7 +60,7 @@
       "id": 5,
       "options": {"orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic == \"battery2/sensor/soc_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "SOC",
+      "title": "C2 SOC",
       "type": "gauge"
     },
     {
@@ -72,7 +70,7 @@
       "id": 6,
       "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic == \"battery2/sensor/voltage_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "Voltage",
+      "title": "C2 Voltage",
       "type": "stat"
     },
     {
@@ -82,7 +80,7 @@
       "id": 7,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic == \"battery2/sensor/current_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "Current",
+      "title": "C2 Current",
       "type": "stat"
     },
     {
@@ -92,7 +90,7 @@
       "id": 8,
       "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic == \"battery2/sensor/power_total/state\")\n  |> last()", "refId": "A"}],
-      "title": "Power",
+      "title": "C2 Power",
       "type": "stat"
     },
     {
@@ -103,54 +101,42 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "description": "BMS 1 - 4 cells (16S4P)",
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 3.0}, {"color": "green", "value": 3.1}, {"color": "yellow", "value": 3.5}, {"color": "red", "value": 3.6}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 0, "y": 6},
       "id": 10,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms1/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 1 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms1/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS1 Cells",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "description": "BMS 2 - 4 cells",
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 6, "y": 6},
       "id": 11,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms2/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 2 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms2/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS2 Cells",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "description": "BMS 3 - 4 cells",
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 12, "y": 6},
       "id": 12,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms3/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 3 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms3/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS3 Cells",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "description": "BMS 4 - 4 cells",
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 18, "y": 6},
       "id": 13,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms4/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 4 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms4/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS4 Cells",
       "type": "timeseries"
     },
     {
@@ -161,50 +147,42 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 0, "y": 13},
       "id": 20,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms1/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 1 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms1/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS1 Cells",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 6, "y": 13},
       "id": 21,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms2/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 2 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms2/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS2 Cells",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 12, "y": 13},
       "id": 22,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms3/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 3 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms3/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS3 Cells",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 5, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 3, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 2.9, "max": 3.6, "decimals": 3}},
       "gridPos": {"h": 6, "w": 6, "x": 18, "y": 13},
       "id": 23,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "list", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms4/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "BMS 4 Cells",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell[1-4]_bms4/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_cell[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "BMS4 Cells",
       "type": "timeseries"
     },
     {
@@ -215,26 +193,22 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 15}, {"color": "yellow", "value": 35}, {"color": "red", "value": 45}]}, "unit": "celsius"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 15}, {"color": "yellow", "value": 35}, {"color": "red", "value": 45}]}, "unit": "celsius"}},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
       "id": 30,
       "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /temperature/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 1 - All BMS Temperatures",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /temperature/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(temperature[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 Temperatures",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 15}, {"color": "yellow", "value": 35}, {"color": "red", "value": 45}]}, "unit": "celsius"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "green", "value": 15}, {"color": "yellow", "value": 35}, {"color": "red", "value": 45}]}, "unit": "celsius"}},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20},
       "id": 31,
       "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /temperature/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 2 - All BMS Temperatures",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /temperature/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(temperature[0-9]_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 Temperatures",
       "type": "timeseries"
     },
     {
@@ -245,26 +219,22 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 29},
       "id": 40,
       "options": {"legend": {"calcs": ["lastNotNull", "mean", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /current_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 1 - Current per BMS",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /current_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(current_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 Current",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 29},
       "id": 41,
       "options": {"legend": {"calcs": ["lastNotNull", "mean", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /current_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 2 - Current per BMS",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /current_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(current_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 Current",
       "type": "timeseries"
     },
     {
@@ -275,26 +245,22 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 38},
       "id": 50,
       "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /soc_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 1 - SOC per BMS",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /soc_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(soc_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 SOC",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 38},
       "id": 51,
       "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /soc_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 2 - SOC per BMS",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /soc_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(soc_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 SOC",
       "type": "timeseries"
     },
     {
@@ -305,26 +271,22 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 47},
       "id": 60,
       "options": {"legend": {"calcs": ["lastNotNull", "mean", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /power_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 1 - Power per BMS",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /power_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(power_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 Power",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"axisCenteredZero": true, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 47},
       "id": 61,
       "options": {"legend": {"calcs": ["lastNotNull", "mean", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /power_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 2 - Power per BMS",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /power_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(power_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 Power",
       "type": "timeseries"
     },
     {
@@ -335,32 +297,28 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watth"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watth"}},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 56},
       "id": 70,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
       "targets": [
-        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /capacity_remaining_bms/)\n  |> map(fn: (r) => ({r with _field: \"C1_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"},
-        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /capacity_remaining_bms/)\n  |> map(fn: (r) => ({r with _field: \"C2_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "B"}
+        {"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /capacity_remaining_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"C1_\" + regexp.replaceAllString(r: /.*sensor\\/capacity_remaining_(bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"},
+        {"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /capacity_remaining_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"C2_\" + regexp.replaceAllString(r: /.*sensor\\/capacity_remaining_(bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "B"}
       ],
-      "title": "All BMS Remaining Capacity",
+      "title": "BMS Capacity",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1, "pointSize": 5, "showPoints": "never"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "short"}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1, "pointSize": 5, "showPoints": "never"}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "short"}},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 56},
       "id": 71,
       "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
       "targets": [
-        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /cycles_bms/)\n  |> map(fn: (r) => ({r with _field: \"C1_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)", "refId": "A"},
-        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /cycles_bms/)\n  |> map(fn: (r) => ({r with _field: \"C2_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)", "refId": "B"}
+        {"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /cycles_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"C1_\" + regexp.replaceAllString(r: /.*sensor\\/(cycles_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)", "refId": "A"},
+        {"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /cycles_bms/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: \"C2_\" + regexp.replaceAllString(r: /.*sensor\\/(cycles_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)", "refId": "B"}
       ],
-      "title": "All BMS Cycle Counts",
+      "title": "BMS Cycles",
       "type": "timeseries"
     },
     {
@@ -371,26 +329,22 @@
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "decimals": 2}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "decimals": 2}},
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 65},
       "id": 80,
       "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_bms[1-4]/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 1 - BMS Pack Voltages",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_bms[1-4]/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 Pack Voltage",
       "type": "timeseries"
     },
     {
       "datasource": {"type": "influxdb", "uid": "influxdb"},
-      "fieldConfig": {
-        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "decimals": 2}
-      },
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "displayName": "${__field.name}", "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "decimals": 2}},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 65},
       "id": 81,
       "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
-      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_bms[1-4]/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
-      "title": "Chain 2 - BMS Pack Voltages",
+      "targets": [{"query": "import \"regexp\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_bms[1-4]/)\n  |> map(fn: (r) => ({_time: r._time, _value: r._value, _field: regexp.replaceAllString(r: /.*sensor\\/(voltage_bms[0-9])\\/state/, v: r.topic, t: \"$1\")}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 Pack Voltage",
       "type": "timeseries"
     }
   ],
@@ -404,6 +358,6 @@
   "timezone": "browser",
   "title": "Battery Details",
   "uid": "battery-details",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
