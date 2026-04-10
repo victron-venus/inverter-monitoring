@@ -6,15 +6,15 @@
 
 set -e
 
-DEPLOY_DIR="/deploy"  # Mounted from host
+DEPLOY_DIR="/deploy"
 
 cd "$DEPLOY_DIR"
 
 echo ">>> Pulling latest changes..."
 git pull --ff-only origin main
 
-echo ">>> Restarting services..."
-docker-compose stop telegraf loki promtail 2>/dev/null || true
-docker-compose up -d telegraf loki promtail
+echo ">>> Restarting telegraf..."
+# Use docker CLI directly (docker-compose not available in container)
+curl -s --unix-socket /var/run/docker.sock -X POST http://localhost/containers/telegraf/restart || true
 
 echo ">>> Deploy complete"
