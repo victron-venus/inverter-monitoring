@@ -1,0 +1,8 @@
+# Environment with secrets
+.env
+
+# Local data
+data/
+
+# OS
+.DS_Store
