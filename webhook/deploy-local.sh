@@ -1,20 +1,28 @@
 #!/bin/bash
 #
 # Local deploy script called by webhook server
-# Runs inside the webhook container with access to host docker socket
+# Downloads latest config files from GitHub and restarts services
 #
 
 set -e
 
 DEPLOY_DIR="/deploy"
+GITHUB_RAW="https://raw.githubusercontent.com/victron-venus/inverter-monitoring/main"
 
 cd "$DEPLOY_DIR"
 
-echo ">>> Pulling latest changes..."
-git pull --ff-only origin main
+echo ">>> Downloading latest telegraf.conf..."
+curl -sL "$GITHUB_RAW/telegraf.conf" -o telegraf.conf.new
+mv telegraf.conf.new telegraf.conf
+
+echo ">>> Downloading latest promtail.yml..."
+curl -sL "$GITHUB_RAW/promtail.yml" -o promtail.yml.new
+mv promtail.yml.new promtail.yml
 
 echo ">>> Restarting telegraf..."
-# Use docker CLI directly (docker-compose not available in container)
 curl -s --unix-socket /var/run/docker.sock -X POST http://localhost/containers/telegraf/restart || true
+
+echo ">>> Restarting promtail..."
+curl -s --unix-socket /var/run/docker.sock -X POST http://localhost/containers/promtail/restart || true
 
 echo ">>> Deploy complete"
