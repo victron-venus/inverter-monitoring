@@ -1,24 +1,58 @@
 version: '3.8'
 
 services:
-  # Webhook listener for GitHub auto-deploy (optional)
-  # Expose via Cloudflare Argo tunnel to receive GitHub webhooks
-  webhook:
-    build: ./webhook
-    container_name: deploy-webhook
+  # ==========================================================================
+  # CORE STACK: InfluxDB + Grafana
+  # ==========================================================================
+  
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
     restart: unless-stopped
     ports:
-      - "9000:9000"
+      - "8086:8086"
     environment:
-      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
-      - DEPLOY_SCRIPT=/app/deploy-local.sh
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_ADMIN_USER:-admin}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_ADMIN_PASSWORD:-changeme123}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG:-home}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET:-inverter}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
     volumes:
-      - .:/deploy:rw
-      - /var/run/docker.sock:/var/run/docker.sock
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
     networks:
       - monitoring
-    profiles:
-      - webhook  # Only start with: docker-compose --profile webhook up -d
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/inverter-overview.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - monitoring
+    depends_on:
+      - influxdb
+
+  # ==========================================================================
+  # DATA COLLECTION: Telegraf
+  # ==========================================================================
 
   telegraf:
     image: telegraf:latest
@@ -27,13 +61,16 @@ services:
     volumes:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     environment:
-      - INFLUX_URL=http://192.168.167.25:8086
+      - INFLUX_URL=${INFLUX_URL:-http://influxdb:8086}
       - INFLUX_TOKEN=${INFLUX_TOKEN}
       - INFLUX_ORG=${INFLUX_ORG:-home}
       - INFLUX_BUCKET=${INFLUX_BUCKET:-inverter}
-      - MQTT_HOST=192.168.160.150
+      - MQTT_HOST=${MQTT_HOST:-192.168.160.150}
     networks:
       - monitoring
+    depends_on:
+      influxdb:
+        condition: service_healthy
 
   # Loki for logs (optional)
   loki:
@@ -65,4 +102,7 @@ networks:
     driver: bridge
 
 volumes:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:
   loki-data:

@@ -31,36 +31,40 @@ Telegraf + InfluxDB + Grafana monitoring for Victron inverter system.
 
 ## Quick Start
 
-### 1. Setup InfluxDB
-
-Open http://192.168.167.25:8086 and complete initial setup:
-- Organization: `home`
-- Bucket: `inverter`
-- Save the API token!
-
-### 2. Configure Telegraf
+### 1. Configure Environment
 
 ```bash
 cp .env.example .env
-# Edit .env with your InfluxDB token
-nano .env
+nano .env  # Set your INFLUX_TOKEN (generate with: openssl rand -hex 32)
 ```
 
-### 3. Deploy Telegraf
+### 2. Start Full Stack
 
 ```bash
-docker-compose up -d telegraf
+docker-compose up -d
 ```
 
-### 4. Import Grafana Dashboard
+This starts:
+- **InfluxDB** on http://localhost:8086
+- **Grafana** on http://localhost:3000 (admin/admin)
+- **Telegraf** collecting MQTT → InfluxDB
+- **Loki** for logs on http://localhost:3100
 
-1. Open http://192.168.167.25:3000 (admin/admin)
-2. Add InfluxDB datasource:
-   - URL: `http://192.168.167.25:8086`
-   - Organization: `home`
-   - Token: your API token
-   - Default bucket: `inverter`
-3. Import dashboard from `grafana/dashboards/inverter-overview.json`
+### 3. Access Dashboards
+
+Open http://localhost:3000 - dashboards are auto-provisioned!
+
+### Alternative: Use Existing InfluxDB/Grafana
+
+If you already have InfluxDB/Grafana running, just start Telegraf:
+
+```bash
+# Edit .env to point to your existing instances
+INFLUX_URL=http://192.168.167.25:8086
+
+# Start only Telegraf
+docker-compose up -d telegraf
+```
 
 ## Data Flow
 
