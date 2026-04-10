@@ -2,6 +2,27 @@ version: '3.8'
 
 services:
   # ==========================================================================
+  # AUTO-DEPLOY: GitHub Webhook (optional)
+  # ==========================================================================
+
+  webhook:
+    build: ./webhook
+    container_name: deploy-webhook
+    restart: unless-stopped
+    ports:
+      - "9001:9000"
+    environment:
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - DEPLOY_SCRIPT=/app/deploy-local.sh
+    volumes:
+      - .:/deploy:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - monitoring
+    profiles:
+      - webhook
+
+  # ==========================================================================
   # CORE STACK: InfluxDB + Grafana
   # ==========================================================================
   
