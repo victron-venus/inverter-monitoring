@@ -9,11 +9,11 @@ datasources:
     isDefault: true
     jsonData:
       version: Flux
-      organization: ${INFLUX_ORG:-home}
-      defaultBucket: ${INFLUX_BUCKET:-inverter}
+      organization: home
+      defaultBucket: inverter
       tlsSkipVerify: true
     secureJsonData:
-      token: ${INFLUX_TOKEN}
+      token: $INFLUX_TOKEN
 
   - name: Loki
     type: loki
