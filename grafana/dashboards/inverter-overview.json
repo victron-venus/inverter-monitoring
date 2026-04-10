@@ -1,7 +1,5 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": {"list": []},
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,382 +8,362 @@
   "liveNow": true,
   "panels": [
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": true,
-            "axisColorMode": "text",
-            "axisLabel": "Power (W)",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "opacity",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "watt"
-        },
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "Grid" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#FF6B6B", "mode": "fixed" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Solar" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#FFE66D", "mode": "fixed" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Battery" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#4ECDC4", "mode": "fixed" } }]
-          },
-          {
-            "matcher": { "id": "byName", "options": "Consumption" },
-            "properties": [{ "id": "color", "value": { "fixedColor": "#95E1D3", "mode": "fixed" } }]
-          }
-        ]
-      },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
-      "id": 1,
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max", "lastNotNull"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_power\" or r._field == \"solar_total\" or r._field == \"battery_power\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-          "refId": "A"
-        }
-      ],
-      "title": "Power Flow",
-      "type": "timeseries"
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "System Overview",
+      "type": "row"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {"mode": "thresholds"},
           "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#FF6B6B", "value": null },
-              { "color": "#FFE66D", "value": 20 },
-              { "color": "#4ECDC4", "value": 50 },
-              { "color": "#95E1D3", "value": 80 }
-            ]
-          },
+          "max": 100, "min": 0,
+          "thresholds": {"mode": "absolute", "steps": [
+            {"color": "#FF6B6B", "value": null},
+            {"color": "#FFE66D", "value": 20},
+            {"color": "#4ECDC4", "value": 50},
+            {"color": "#95E1D3", "value": 80}
+          ]},
           "unit": "percent"
         }
       },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 10 },
-      "id": 2,
-      "options": {
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_soc\")\n  |> last()",
-          "refId": "A"
-        }
-      ],
+      "gridPos": {"h": 5, "w": 4, "x": 0, "y": 1},
+      "id": 1,
+      "options": {"orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_soc\")\n  |> last()", "refId": "A"}],
       "title": "Battery SOC",
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          },
-          "unit": "watt"
-        }
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 10 },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"solar_total\")\n  |> last()",
-          "refId": "A"
-        }
-      ],
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}},
+      "gridPos": {"h": 5, "w": 4, "x": 4, "y": 1},
+      "id": 2,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"solar_total\")\n  |> last()", "refId": "A"}],
       "title": "Solar Power",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "#4ECDC4", "value": null },
-              { "color": "#FFE66D", "value": 0 },
-              { "color": "#FF6B6B", "value": 100 }
-            ]
-          },
-          "unit": "watt"
-        }
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 10 },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_power\")\n  |> last()",
-          "refId": "A"
-        }
-      ],
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}, {"color": "#FFE66D", "value": 0}, {"color": "#FF6B6B", "value": 100}]}, "unit": "watt"}},
+      "gridPos": {"h": 5, "w": 4, "x": 8, "y": 1},
+      "id": 3,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_power\")\n  |> last()", "refId": "A"}],
       "title": "Grid Power",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          },
-          "unit": "volt"
-        }
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 10 },
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "#FF6B6B", "value": null}, {"color": "#4ECDC4", "value": 0}]}, "unit": "watt"}},
+      "gridPos": {"h": 5, "w": 4, "x": 12, "y": 1},
+      "id": 4,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_power\")\n  |> last()", "refId": "A"}],
+      "title": "Battery Power",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt"}},
+      "gridPos": {"h": 5, "w": 4, "x": 16, "y": 1},
       "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_voltage\")\n  |> last()",
-          "refId": "A"
-        }
-      ],
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_voltage\")\n  |> last()", "refId": "A"}],
       "title": "Battery Voltage",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}},
+      "gridPos": {"h": 5, "w": 4, "x": 20, "y": 1},
+      "id": 6,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_current\")\n  |> last()", "refId": "A"}],
+      "title": "Battery Current",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "SOC %",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
-          },
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": true, "axisLabel": "Power (W)", "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true},
           "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          },
-          "unit": "percent"
-        }
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "watt"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "grid_power"}, "properties": [{"id": "color", "value": {"fixedColor": "#FF6B6B", "mode": "fixed"}}]},
+          {"matcher": {"id": "byName", "options": "solar_total"}, "properties": [{"id": "color", "value": {"fixedColor": "#FFE66D", "mode": "fixed"}}]},
+          {"matcher": {"id": "byName", "options": "battery_power"}, "properties": [{"id": "color", "value": {"fixedColor": "#4ECDC4", "mode": "fixed"}}]}
+        ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "id": 6,
-      "options": {
-        "legend": { "calcs": ["mean", "min", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 6},
+      "id": 10,
+      "options": {"legend": {"calcs": ["mean", "max", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_power\" or r._field == \"solar_total\" or r._field == \"battery_power\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Power Flow",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 14},
+      "id": 101,
+      "title": "Battery Chain 1 - Individual BMS",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}
       },
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 15},
+      "id": 20,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /soc_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\nimport \"strings\"", "refId": "A"}],
+      "title": "Chain 1 - SOC per BMS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "celsius"}
+      },
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 15},
+      "id": 21,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /temperature/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 - Temperatures",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}
+      },
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 15},
+      "id": 22,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /current_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 - Current per BMS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 3.0, "max": 3.65, "decimals": 3}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 21},
+      "id": 23,
+      "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 - Cell Voltages (all 16 cells)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 21},
+      "id": 24,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /power_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 1 - Power per BMS",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 29},
+      "id": 102,
+      "title": "Battery Chain 2 - Individual BMS",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}
+      },
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 30},
+      "id": 30,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /soc_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 - SOC per BMS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "celsius"}
+      },
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 30},
+      "id": 31,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /temperature/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 - Temperatures",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "amp"}
+      },
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 30},
+      "id": 32,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /current_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 - Current per BMS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt", "min": 3.0, "max": 3.65, "decimals": 3}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 36},
+      "id": 33,
+      "options": {"legend": {"calcs": ["lastNotNull", "min", "max"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /voltage_cell/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 - Cell Voltages (all 16 cells)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watt"}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 36},
+      "id": 34,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [{"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /power_bms/)\n  |> map(fn: (r) => ({r with _field: strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
+      "title": "Chain 2 - Power per BMS",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 44},
+      "id": 103,
+      "title": "BMS Health & Capacity",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "watth"}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 45},
+      "id": 40,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
       "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_soc\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-          "refId": "A"
-        }
+        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /capacity_remaining_bms/)\n  |> map(fn: (r) => ({r with _field: \"C1_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"},
+        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /capacity_remaining_bms/)\n  |> map(fn: (r) => ({r with _field: \"C2_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "B"}
       ],
+      "title": "BMS Remaining Capacity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "bars", "fillOpacity": 80, "lineWidth": 1, "pointSize": 5, "showPoints": "never"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "short"}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 45},
+      "id": 41,
+      "options": {"legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right", "showLegend": true}, "tooltip": {"mode": "multi"}},
+      "targets": [
+        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic =~ /cycles_bms/)\n  |> map(fn: (r) => ({r with _field: \"C1_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)", "refId": "A"},
+        {"query": "import \"strings\"\nfrom(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic =~ /cycles_bms/)\n  |> map(fn: (r) => ({r with _field: \"C2_\" + strings.split(v: r.topic, t: \"/\")[2]}))\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)", "refId": "B"}
+      ],
+      "title": "BMS Cycle Counts",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 53},
+      "id": 104,
+      "title": "Battery History",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "percent", "min": 0, "max": 100}
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 54},
+      "id": 50,
+      "options": {"legend": {"calcs": ["mean", "min", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_soc\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
       "title": "Battery SOC History",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
       "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "Voltage (V)",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": null }]
-          },
-          "unit": "volt"
-        }
+        "defaults": {"color": {"mode": "palette-classic"}, "custom": {"drawStyle": "line", "fillOpacity": 10, "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5, "showPoints": "never", "spanNulls": true}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "volt"}
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-      "id": 7,
-      "options": {
-        "legend": { "calcs": ["mean", "min", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
-      },
-      "targets": [
-        {
-          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_voltage\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-          "refId": "A"
-        }
-      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 54},
+      "id": 51,
+      "options": {"legend": {"calcs": ["mean", "min", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_voltage\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
       "title": "Battery Voltage History",
       "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 62},
+      "id": 105,
+      "title": "System Status",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": -70}, {"color": "green", "value": -50}]}, "unit": "dBm"}},
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 63},
+      "id": 60,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic == \"battery/sensor/wifi_signal/state\")\n  |> last()", "refId": "A"}],
+      "title": "Chain 1 WiFi",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": -70}, {"color": "green", "value": -50}]}, "unit": "dBm"}},
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 63},
+      "id": 61,
+      "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic == \"battery2/sensor/wifi_signal/state\")\n  |> last()", "refId": "A"}],
+      "title": "Chain 2 WiFi",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "s"}},
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 63},
+      "id": 62,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain1\")\n  |> filter(fn: (r) => r.topic == \"battery/sensor/uptime/state\")\n  |> last()", "refId": "A"}],
+      "title": "Chain 1 Uptime",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "mappings": [], "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}, "unit": "s"}},
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 63},
+      "id": 63,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"battery_chain2\")\n  |> filter(fn: (r) => r.topic == \"battery2/sensor/uptime/state\")\n  |> last()", "refId": "A"}],
+      "title": "Chain 2 Uptime",
+      "type": "stat"
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["inverter", "energy", "battery"],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
+  "tags": ["inverter", "energy", "battery", "solar"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
   "timepicker": {},
   "timezone": "browser",
-  "title": "Inverter Overview",
+  "title": "Inverter Dashboard - Detailed",
   "uid": "inverter-overview",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }
