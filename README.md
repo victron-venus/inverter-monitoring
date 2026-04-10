@@ -105,15 +105,48 @@ org_name = home
 org_role = Viewer
 ```
 
+## Auto-Deploy via GitHub Webhook (Optional)
+
+If you have Cloudflare Argo tunnel to your Synology, you can enable auto-deploy:
+
+### 1. Generate webhook secret
+```bash
+openssl rand -hex 32
+# Add to .env as WEBHOOK_SECRET
+```
+
+### 2. Start webhook service
+```bash
+docker-compose --profile webhook up -d
+```
+
+### 3. Configure Argo tunnel
+Add route in Cloudflare dashboard:
+- Public hostname: `deploy.yourdomain.com`
+- Service: `http://localhost:9000`
+
+### 4. Configure GitHub webhook
+1. Go to repo Settings → Webhooks → Add webhook
+2. Payload URL: `https://deploy.yourdomain.com/webhook`
+3. Content type: `application/json`
+4. Secret: your WEBHOOK_SECRET
+5. Events: Just the push event
+
+Now pushes to main branch will auto-deploy!
+
 ## Files
 
 ```
 inverter-monitoring/
-├── docker-compose.yml      # Telegraf + Loki stack
+├── docker-compose.yml      # Telegraf + Loki + Webhook stack
 ├── telegraf.conf           # MQTT → InfluxDB config
 ├── .env.example            # Environment variables template
 ├── .env                    # Your secrets (gitignored)
 ├── promtail.yml            # Log shipping config (optional)
+├── webhook/                # GitHub webhook auto-deploy
+│   ├── server.py           # Flask webhook listener
+│   ├── Dockerfile          # Container build
+│   └── deploy-local.sh     # Deploy script
 └── grafana/
     └── dashboards/
         └── inverter-overview.json   # Main dashboard

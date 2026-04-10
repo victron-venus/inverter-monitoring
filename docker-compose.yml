@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  # Webhook listener for GitHub auto-deploy (optional)
+  # Expose via Cloudflare Argo tunnel to receive GitHub webhooks
+  webhook:
+    build: ./webhook
+    container_name: deploy-webhook
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    environment:
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - DEPLOY_SCRIPT=/app/deploy-local.sh
+    volumes:
+      - .:/deploy:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - monitoring
+    profiles:
+      - webhook  # Only start with: docker-compose --profile webhook up -d
+
   telegraf:
     image: telegraf:latest
     container_name: telegraf

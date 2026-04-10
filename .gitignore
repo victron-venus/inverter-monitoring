@@ -1,6 +1,9 @@
 # Environment with secrets
 .env
 
+# Local deploy script (contains paths specific to your setup)
+deploy.sh
+
 # Local data
 data/
 
