@@ -60,7 +60,7 @@ If you already have InfluxDB/Grafana running, just start Telegraf:
 
 ```bash
 # Edit .env to point to your existing instances
-INFLUX_URL=http://192.168.167.25:8086
+INFLUX_URL=http://your-influxdb-host:8086
 
 # Start only Telegraf
 docker-compose up -d telegraf
@@ -92,7 +92,7 @@ Grafana panels can be embedded via iframe:
 
 ```html
 <iframe 
-  src="http://192.168.167.25:3000/d-solo/inverter-overview/inverter?orgId=1&panelId=1&theme=dark"
+  src="http://your-grafana-host:3000/d-solo/inverter-overview/inverter?orgId=1&panelId=1&theme=dark"
   width="100%" 
   height="400" 
   frameborder="0">

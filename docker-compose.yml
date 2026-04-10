@@ -65,7 +65,7 @@ services:
       - INFLUX_TOKEN=${INFLUX_TOKEN}
       - INFLUX_ORG=${INFLUX_ORG:-home}
       - INFLUX_BUCKET=${INFLUX_BUCKET:-inverter}
-      - MQTT_HOST=${MQTT_HOST:-192.168.160.150}
+      - MQTT_HOST=${MQTT_HOST}
     networks:
       - monitoring
     depends_on:
