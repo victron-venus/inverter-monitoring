@@ -300,6 +300,15 @@
       "targets": [{"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_voltage\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)", "refId": "A"}],
       "title": "Battery Voltage History",
       "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 42},
+      "id": 60,
+      "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "sortOrder": "Descending", "dedupStrategy": "none"},
+      "targets": [{"refId": "A", "expr": "{job=\"varlogs\"} |~ \"error|Error|ERROR|warn|Warn|WARN|fail|Fail|FAIL\"", "queryType": "range"}],
+      "title": "System Logs (Errors/Warnings)",
+      "type": "logs"
     }
   ],
   "refresh": "5s",
