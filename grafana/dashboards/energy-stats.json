@@ -184,11 +184,10 @@
       "gridPos": {"h": 8, "w": 24, "x": 0, "y": 30},
       "datasource": {"type": "loki", "uid": "loki"},
       "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "sortOrder": "Descending", "dedupStrategy": "none"},
-      "targets": [{
-        "refId": "A",
-        "expr": "{job=\"varlogs\"} |~ \"error|Error|ERROR|warn|Warn|WARN\"",
-        "queryType": "range"
-      }]
+      "targets": [
+        {"refId": "Cerbo", "expr": "{job=\"cerbo\"}", "queryType": "range"},
+        {"refId": "Synology", "expr": "{job=\"varlogs\"} |~ \"error|Error|ERROR|warn|Warn|WARN\"", "queryType": "range"}
+      ]
     }
   ],
   "refresh": "30s",

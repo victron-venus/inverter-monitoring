@@ -306,8 +306,11 @@
       "gridPos": {"h": 6, "w": 24, "x": 0, "y": 42},
       "id": 60,
       "options": {"showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": false, "enableLogDetails": true, "sortOrder": "Descending", "dedupStrategy": "none"},
-      "targets": [{"refId": "A", "expr": "{job=\"varlogs\"} |~ \"error|Error|ERROR|warn|Warn|WARN|fail|Fail|FAIL\"", "queryType": "range"}],
-      "title": "System Logs (Errors/Warnings)",
+      "targets": [
+        {"refId": "Cerbo", "expr": "{job=\"cerbo\"}", "queryType": "range"},
+        {"refId": "Synology", "expr": "{job=\"varlogs\"} |~ \"error|Error|ERROR|warn|Warn|WARN|fail|Fail|FAIL\"", "queryType": "range"}
+      ],
+      "title": "System Logs (Cerbo + Synology Errors)",
       "type": "logs"
     }
   ],
