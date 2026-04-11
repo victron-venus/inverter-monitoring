@@ -155,4 +155,14 @@ inverter-monitoring/
     └── dashboards/
         └── inverter-overview.json   # Main dashboard
 ```
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [inverter-control](https://github.com/victron-venus/inverter-control) | Grid-zero feed-in controller with split-phase compensation |
+| [inverter-dashboard](https://github.com/victron-venus/inverter-dashboard) | Remote web dashboard via MQTT (Docker) |
+| [dbus-mqtt-battery](https://github.com/victron-venus/dbus-mqtt-battery) | MQTT to D-Bus bridge for JBD BMS batteries |
+| [dbus-tasmota-pv](https://github.com/victron-venus/dbus-tasmota-pv) | Tasmota smart plug as PV inverter on D-Bus |
+| [esphome-jbd-bms-mqtt](https://github.com/victron-venus/esphome-jbd-bms-mqtt) | ESP32 Bluetooth monitor for JBD BMS |
+
 # Test webhook Thu Apr  9 22:27:33 PDT 2026

@@ -12,6 +12,8 @@ datasources:
       organization: home
       defaultBucket: inverter
       tlsSkipVerify: true
+      httpTimeout: 60
+      minInterval: "30s"
     secureJsonData:
       token: $INFLUX_TOKEN
 
