@@ -4,9 +4,6 @@
 # Local deploy script (contains paths specific to your setup)
 deploy.sh
 
-# Release script (local helper)
-release.sh
-
 # Local restart script
 restart_grafana.sh
 
