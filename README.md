@@ -1,5 +1,12 @@
 # Inverter Monitoring Stack
 
+[![CI](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/network/members)
+[![GitHub last commit](https://img.shields.io/github/last-commit/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/commits/main)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/victron-venus/inverter-monitoring/graphs/commit-activity)
+
 Telegraf + InfluxDB + Grafana monitoring for Victron inverter system.
 
 ## Architecture
@@ -165,4 +172,25 @@ inverter-monitoring/
 | [dbus-tasmota-pv](https://github.com/victron-venus/dbus-tasmota-pv) | Tasmota smart plug as PV inverter on D-Bus |
 | [esphome-jbd-bms-mqtt](https://github.com/victron-venus/esphome-jbd-bms-mqtt) | ESP32 Bluetooth monitor for JBD BMS |
 
-# Test webhook Thu Apr  9 22:27:33 PDT 2026
+
+## License
+
+MIT License
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature-name`)
+3. Commit your changes
+4. Push to the branch (`git push origin feature-name`)
+5. Create a Pull Request
+
+## Support
+
+For issues specific to:
+- **Telegraf configuration**: See [Telegraf documentation](https://docs.influxdata.com/telegraf/)
+- **InfluxDB**: See [InfluxDB documentation](https://docs.influxdata.com/influxdb/)
+- **Grafana**: See [Grafana documentation](https://grafana.com/docs/)
+- **This integration**: Open an issue in this repository
+
+**Note:** This is a community project and is not affiliated with Victron Energy.
