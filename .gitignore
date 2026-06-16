@@ -12,3 +12,11 @@ data/
 
 # OS
 .DS_Store
+
+# Ignore logs directory
+logs/
+
+# Ignore commit.txt
+commit.txt
+
+C*.md

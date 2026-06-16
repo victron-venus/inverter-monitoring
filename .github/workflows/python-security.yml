@@ -1,9 +1,0 @@
-# Disabled: No Python in repository
-name: Disabled Python Security Scan
-on: []
-
-jobs:
-  python-security:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Workflow disabled because there is no Python code in this repository."
