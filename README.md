@@ -11,29 +11,27 @@ Telegraf + InfluxDB + Grafana monitoring for Victron inverter system.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Cerbo GX                                │
-│  ┌──────────────────┐                                           │
-│  │ inverter-control │──── MQTT ────┐                            │
-│  │    (Python)      │              │                            │
-│  └──────────────────┘              │                            │
-│                                    │                            │
-│  ┌──────────────────┐              │                            │
-│  │ ESP32 BMS x8     │──── MQTT ────┤                            │
-│  │ (battery data)   │              │                            │
-│  └──────────────────┘              │                            │
-└────────────────────────────────────┼────────────────────────────┘
-                                     │
-                                     ▼
-┌────────────────────────────────────┴────────────────────────────┐
-│                        Synology NAS                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────┐   │
-│  │   Telegraf   │───▶│   InfluxDB   │───▶│     Grafana      │   │
-│  │ (collector)  │    │  (storage)   │    │ (visualization)  │   │
-│  └──────────────┘    └──────────────┘    └──────────────────┘   │
-│                                                :3000            │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Cerbo["Cerbo GX"]
+        ICM["inverter-control"]
+        ESP["ESP32 BMS x8"]
+    end
+
+    subgraph NAS["Synology NAS"]
+        TEL["Telegraf"]
+        INF["InfluxDB"]
+        GRAF["Grafana"]
+    end
+
+    ICM -->|"MQTT"| TEL
+    ESP -->|"MQTT"| TEL
+    TEL -->|"collect"| INF
+    INF -->|"query"| GRAF
+
+    style GRAF fill:#FF9900,color:#fff
+    style INF fill:#22AD9B,color:#fff
+    style TEL fill:#439EF7,color:#fff
 ```
 
 ## Quick Start
@@ -75,6 +73,28 @@ docker-compose up -d telegraf
 
 ## Data Flow
 
+## Data Flow
+
+```mermaid
+flowchart LR
+    subgraph Sources["MQTT Sources"]
+        INV["inverter/state"]
+        BAT1["battery/+/+"]
+        BAT2["battery2/+/+"]
+        MPPT["N/+/solarcharger/+/*"]
+    end
+
+    subgraph Storage["TIG Stack"]
+        T[Telegraf] --> I[InfluxDB] --> G[Grafana]
+    end
+
+    Sources --> T
+
+    style G fill:#FF9900,color:#fff
+    style I fill:#22AD9B,color:#fff
+    style T fill:#439EF7,color:#fff
+```
+
 ### MQTT Topics Collected
 
 | Topic | Description |
@@ -98,10 +118,10 @@ docker-compose up -d telegraf
 Grafana panels can be embedded via iframe:
 
 ```html
-<iframe 
+<iframe
   src="http://your-grafana-host:3000/d-solo/inverter-overview/inverter?orgId=1&panelId=1&theme=dark"
-  width="100%" 
-  height="400" 
+  width="100%"
+  height="400"
   frameborder="0">
 </iframe>
 ```
@@ -144,6 +164,10 @@ Add route in Cloudflare dashboard:
 5. Events: Just the push event
 
 Now pushes to main branch will auto-deploy!
+
+## Documentation
+
+- [System Architecture](./.github/docs/system-architecture.md) - Data flow diagrams, runbook
 
 ## Files
 
