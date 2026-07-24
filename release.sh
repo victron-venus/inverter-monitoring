@@ -35,7 +35,7 @@ fi
 
 # Highest semver tag (git describe can miss a newer tag not on the direct ancestry path)
 LATEST_TAG=$(git tag -l 'v*' | sort -V | tail -n1)
-if [ -z "$LATEST_TAG" ]; then
+if [[ -z "$LATEST_TAG" ]]; then
     LATEST_TAG="v0.0.0"
 fi
 echo "Latest tag (after fetch): $LATEST_TAG"
@@ -52,14 +52,14 @@ fi
 NEW_VER="${NEW_TAG#v}"
 
 VERSION_FILE=""
-if [ -f VERSION ]; then
+if [[ -f VERSION ]]; then
     VERSION_FILE=VERSION
-elif [ -f version ]; then
+elif [[ -f version ]]; then
     VERSION_FILE=version
 fi
 
 # Do not release below committed VERSION (e.g. tags lagging behind a bumped VERSION file)
-if [ -n "$VERSION_FILE" ]; then
+if [[ -n "$VERSION_FILE" ]]; then
     OLD=$(tr -d '\r\n' < "$VERSION_FILE")
     OLD_NUM="${OLD#v}"
     if [[ "$OLD_NUM" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ "$NEW_VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -88,7 +88,7 @@ if [ -n "$VERSION_FILE" ]; then
     else
         NEW_CONTENT="$NEW_VER"
     fi
-    if [ "$OLD" != "$NEW_CONTENT" ]; then
+    if [[ "$OLD" != "$NEW_CONTENT" ]]; then
         printf '%s\n' "$NEW_CONTENT" > "$VERSION_FILE"
         git add "$VERSION_FILE"
         git commit -m "Bump $VERSION_FILE to $NEW_CONTENT for release $NEW_TAG"
