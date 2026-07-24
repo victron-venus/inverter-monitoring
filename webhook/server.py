@@ -104,6 +104,23 @@ def update_inverter_dashboard(tag: str) -> tuple:
     return False, output
 
 
+def run_deploy_script():
+    """Execute the deploy script and handle results"""
+    try:
+        result = subprocess.run([DEPLOY_SCRIPT], capture_output=True, text=True, timeout=300)
+
+        if result.returncode == 0:
+            logger.info("Deploy successful")
+            return jsonify({"status": "deployed"})
+        else:
+            logger.exception(f"Deploy failed: {result.stderr}")
+            return jsonify({"status": "failed", "error": result.stderr}), 500
+
+    except subprocess.TimeoutExpired:
+        logger.exception("Deploy timed out")
+        return jsonify({"status": "timeout"}), 500
+
+
 @app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint"""
@@ -121,82 +138,78 @@ def webhook():
 
     # Parse event
     event = request.headers.get("X-GitHub-Event", "")
-    payload = request.json
-    repo = payload.get("repository", {}).get("name", "")
+    event = sanitize_for_logging(event)
+    logger.info(f"Received {event} event")
 
-    logger.info(f"Received {event} event for {repo}")
-
-    # Handle release events
     if event == "release":
-        action = payload.get("action", "")
-        if action != "published":
-            logger.info(f"Ignoring release action: {action}")
-            return jsonify({"status": "ignored", "action": action})
+        return handle_release_event(request.json)
 
-        release = payload.get("release", {})
-        tag = release.get("tag_name", "")
-
-        if not tag:
-            return jsonify({"status": "ignored", "reason": "no tag"})
-
-        logger.info(f"Processing release {tag} for {repo}")
-
-        results = {}
-
-        if repo == "inverter-control":
-            success, msg = update_inverter_control(tag)
-            results["inverter-control"] = {"success": success, "message": msg}
-
-        elif repo == "inverter-dashboard":
-            success, msg = update_inverter_dashboard(tag)
-            results["inverter-dashboard"] = {"success": success, "message": msg}
-
-        else:
-            return jsonify({"status": "ignored", "repo": repo})
-
-        status = "deployed" if all(r["success"] for r in results.values()) else "partial"
-        return jsonify({"status": status, "tag": tag, "results": results})
-
-    # Handle push events (for monitoring config)
     if event == "push":
-        ref = payload.get("ref", "")
-        branch = ref.replace("refs/heads/", "")
+        return handle_push_event(request.json)
 
-        if branch not in ALLOWED_BRANCHES:
-            logger.info(f"Ignoring push to branch: {branch}")
-            return jsonify({"status": "ignored", "branch": branch})
-
-        # Only for inverter-monitoring repo
-        if repo != "inverter-monitoring":
-            logger.info(f"Ignoring push to repo: {repo}")
-            return jsonify({"status": "ignored", "repo": repo})
-
-        commits = payload.get("commits", [])
-        pusher = payload.get("pusher", {}).get("name", "unknown")
-
-        logger.info(f"Received push to {branch} by {pusher} ({len(commits)} commits)")
-
-        # Trigger deploy for monitoring configs
-        try:
-            result = subprocess.run([DEPLOY_SCRIPT], capture_output=True, text=True, timeout=300)
-
-            if result.returncode == 0:
-                logger.info("Deploy successful")
-                return jsonify({"status": "deployed", "branch": branch, "commits": len(commits)})
-            else:
-                logger.exception(f"Deploy failed: {result.stderr}")
-                return jsonify({"status": "failed", "error": result.stderr}), 500
-
-        except subprocess.TimeoutExpired:
-            logger.exception("Deploy timed out")
-            return jsonify({"status": "timeout"}), 500
-        except Exception as e:
-            logger.exception(f"Deploy error: {e}")
-            return jsonify({"status": "error", "error": str(e)}), 500
-
-    # Ignore other events
     logger.info(f"Ignoring event: {event}")
     return jsonify({"status": "ignored", "event": event})
+
+
+def sanitize_for_logging(value: str) -> str:
+    """Sanitize user input for logging - removes potential injection vectors"""
+    return "".join(c for c in value if c.isalnum() or c in "-_")
+
+
+def handle_release_event(payload: dict):
+    """Handle GitHub release event"""
+    action = payload.get("action", "")
+    if action != "published":
+        logger.info(f"Ignoring release action: {action}")
+        return jsonify({"status": "ignored", "action": action})
+
+    release = payload.get("release", {})
+    tag = release.get("tag_name", "")
+
+    if not tag:
+        return jsonify({"status": "ignored", "reason": "no tag"})
+
+    repo = payload.get("repository", {}).get("name", "")
+    logger.info(f"Processing release {tag} for {repo}")
+
+    results = {}
+
+    if repo == "inverter-control":
+        success, msg = update_inverter_control(tag)
+        results["inverter-control"] = {"success": success, "message": msg}
+
+    elif repo == "inverter-dashboard":
+        success, msg = update_inverter_dashboard(tag)
+        results["inverter-dashboard"] = {"success": success, "message": msg}
+
+    else:
+        return jsonify({"status": "ignored", "repo": sanitize_for_logging(repo)})
+
+    status = "deployed" if all(r["success"] for r in results.values()) else "partial"
+    return jsonify({"status": status, "tag": tag, "results": results})
+
+
+def handle_push_event(payload: dict):
+    """Handle GitHub push event"""
+    ref = payload.get("ref", "")
+    branch = ref.replace("refs/heads/", "")
+
+    if branch not in ALLOWED_BRANCHES:
+        logger.info(f"Ignoring push to branch: {branch}")
+        return jsonify({"status": "ignored", "branch": branch})
+
+    repo = payload.get("repository", {}).get("name", "")
+
+    if repo != "inverter-monitoring":
+        logger.info(f"Ignoring push to repo: {repo}")
+        return jsonify({"status": "ignored", "repo": repo})
+
+    commits = payload.get("commits", [])
+    pusher = payload.get("pusher", {}).get("name", "unknown")
+
+    logger.info(f"Received push to {branch} by {pusher} ({len(commits)} commits)")
+
+    return run_deploy_script()
 
 
 if __name__ == "__main__":
