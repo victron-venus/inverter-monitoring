@@ -160,7 +160,7 @@ def handle_release_event(payload: dict):
     """Handle GitHub release event"""
     action = payload.get("action", "")
     if action != "published":
-        logger.info(f"Ignoring release action: {action}")
+        logger.info(f"Ignoring release action: {sanitize_for_logging(action)}")
         return jsonify({"status": "ignored", "action": action})
 
     release = payload.get("release", {})
@@ -170,7 +170,7 @@ def handle_release_event(payload: dict):
         return jsonify({"status": "ignored", "reason": "no tag"})
 
     repo = payload.get("repository", {}).get("name", "")
-    logger.info(f"Processing release {tag} for {repo}")
+    logger.info(f"Processing release {sanitize_for_logging(tag)} for {sanitize_for_logging(repo)}")
 
     results = {}
 
@@ -195,19 +195,19 @@ def handle_push_event(payload: dict):
     branch = ref.replace("refs/heads/", "")
 
     if branch not in ALLOWED_BRANCHES:
-        logger.info(f"Ignoring push to branch: {branch}")
+        logger.info(f"Ignoring push to branch: {sanitize_for_logging(branch)}")
         return jsonify({"status": "ignored", "branch": branch})
 
     repo = payload.get("repository", {}).get("name", "")
 
     if repo != "inverter-monitoring":
-        logger.info(f"Ignoring push to repo: {repo}")
+        logger.info(f"Ignoring push to repo: {sanitize_for_logging(repo)}")
         return jsonify({"status": "ignored", "repo": repo})
 
     commits = payload.get("commits", [])
     pusher = payload.get("pusher", {}).get("name", "unknown")
 
-    logger.info(f"Received push to {branch} by {pusher} ({len(commits)} commits)")
+    logger.info(f"Received push to {sanitize_for_logging(branch)} by {sanitize_for_logging(pusher)} ({len(commits)} commits)")
 
     return run_deploy_script()
 
