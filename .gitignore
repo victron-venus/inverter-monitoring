@@ -8,3 +8,4 @@ commit.txt
 C*.md
 __pycache__/
 *.bak
+*.tmp
