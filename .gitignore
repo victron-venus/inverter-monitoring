@@ -1,24 +1,10 @@
-# Environment with secrets
 .env
-
-# Local deploy script (contains paths specific to your setup)
 deploy.sh
-
-# Local restart script
 restart_grafana.sh
-
-# Local data
 data/
-
-# OS
 .DS_Store
-
-# Ignore logs directory
 logs/
-
-# Ignore commit.txt
 commit.txt
-
 C*.md
 __pycache__/
 *.bak
