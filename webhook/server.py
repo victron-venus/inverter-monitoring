@@ -137,9 +137,9 @@ def webhook():
         return jsonify({"error": "Invalid signature"}), 401
 
     # Parse event
-    event = request.headers.get("X-GitHub-Event", "")
-    event = sanitize_for_logging(event)
-    logger.info(f"Received {event} event")
+    raw_event = request.headers.get("X-GitHub-Event", "")
+    event = sanitize_for_logging(raw_event)
+    logger.info("Received %s event", event)
 
     if event == "release":
         return handle_release_event(request.json)
@@ -147,7 +147,7 @@ def webhook():
     if event == "push":
         return handle_push_event(request.json)
 
-    logger.info(f"Ignoring event: {event}")
+    logger.info("Ignoring event: %s", event)
     return jsonify({"status": "ignored", "event": event})
 
 

@@ -64,7 +64,7 @@ if [[ -n "$VERSION_FILE" ]]; then
     OLD_NUM="${OLD#v}"
     if [[ "$OLD_NUM" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ "$NEW_VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         HIGHER=$(printf '%s\n' "$NEW_VER" "$OLD_NUM" | sort -V | tail -n1)
-        if [ "$HIGHER" != "$NEW_VER" ]; then
+        if [[ "$HIGHER" != "$NEW_VER" ]]; then
             echo ">>> $VERSION_FILE ($OLD_NUM) is ahead of tag-based bump ($NEW_VER); releasing $HIGHER instead (no downgrade)."
             NEW_VER="$HIGHER"
             NEW_TAG="v$NEW_VER"
@@ -81,7 +81,7 @@ if [[ ! ${REPLY:-} =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-if [ -n "$VERSION_FILE" ]; then
+if [[ -n "$VERSION_FILE" ]]; then
     OLD=$(tr -d '\r\n' < "$VERSION_FILE")
     if echo "$OLD" | grep -q '^v'; then
         NEW_CONTENT="v$NEW_VER"
