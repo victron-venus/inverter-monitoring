@@ -1,4 +1,4 @@
-FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6
+FROM python@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     openssh-client \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --only-binary :all: flask gunicorn
+    && pip install --no-cache-dir --only-binary :all: flask==3.1.3 gunicorn==26.0.0
 
 COPY server.py .
 COPY deploy-local.sh .

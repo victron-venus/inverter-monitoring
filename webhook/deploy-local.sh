@@ -12,11 +12,11 @@ GITHUB_RAW="https://raw.githubusercontent.com/victron-venus/inverter-monitoring/
 cd "$DEPLOY_DIR"
 
 echo ">>> Downloading latest telegraf.conf..."
-curl -sSL "$GITHUB_RAW/telegraf.conf" -o telegraf.conf.new
+curl -sSL --proto '=https' --tlsv1.2 "$GITHUB_RAW/telegraf.conf" -o telegraf.conf.new
 mv telegraf.conf.new telegraf.conf
 
 echo ">>> Downloading latest promtail.yml..."
-curl -sSL "$GITHUB_RAW/promtail.yml" -o promtail.yml.new
+curl -sSL --proto '=https' --tlsv1.2 "$GITHUB_RAW/promtail.yml" -o promtail.yml.new
 mv promtail.yml.new promtail.yml
 
 echo ">>> Restarting telegraf..."
