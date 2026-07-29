@@ -14,7 +14,6 @@ import os
 import re
 import hmac
 import hashlib
-import shlex
 import subprocess
 import logging
 from flask import Flask, request, jsonify
@@ -72,15 +71,17 @@ def update_inverter_control(tag: str) -> tuple:
 
     # Use SSH to update on Cerbo
     # Cerbo doesn't have git, so we use curl to download files
-    # `tag` is validated against TAG_PATTERN above and shell-quoted below,
-    # since it is otherwise attacker-controlled (comes from the GitHub
-    # release payload) and is interpolated into a command run by a remote shell.
-    quoted_tag = shlex.quote(tag)
+    # `tag` is otherwise attacker-controlled (comes from the GitHub release
+    # payload) and is interpolated into a command run by a remote shell, so
+    # it is validated against TAG_PATTERN above (restricted to a safe
+    # character set) before being embedded here. Note: shlex.quote() is not
+    # usable here since `tag` is embedded inside a string that is already
+    # single-quoted for the remote shell, so its escaping would be ineffective.
     commands = [
         # Download updated files
         "cd /data/inverter-control && "
         "for f in main.py config.py victron.py homeassistant.py mqtt_bridge.py ui_config.py keepalive.py console_server.py version; do "
-        f"curl -sL 'https://raw.githubusercontent.com/victron-venus/inverter-control/{quoted_tag}/'\"$f\" -o \"$f.new\" 2>/dev/null && mv \"$f.new\" \"$f\"; "
+        f"curl -sL 'https://raw.githubusercontent.com/victron-venus/inverter-control/{tag}/'\"$f\" -o \"$f.new\" 2>/dev/null && mv \"$f.new\" \"$f\"; "
         "done",
         # Restart service
         "svc -t /service/inverter-control",
