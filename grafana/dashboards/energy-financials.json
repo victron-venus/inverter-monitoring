@@ -1,0 +1,337 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "id": 100,
+      "title": "Daily Energy Summary",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "opacity", "lineWidth": 1},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}]},
+          "unit": "kWh"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "grid_daily_kwh"}, "properties": [{"id": "color", "value": {"fixedColor": "#FF6B6B", "mode": "fixed"}}]},
+          {"matcher": {"id": "byName", "options": "produced_today_kwh"}, "properties": [{"id": "color", "value": {"fixedColor": "#FFE66D", "mode": "fixed"}}]},
+          {"matcher": {"id": "byName", "options": "battery_in_daily_kwh"}, "properties": [{"id": "color", "value": {"fixedColor": "#4ECDC4", "mode": "fixed"}}]},
+          {"matcher": {"id": "byName", "options": "battery_out_daily_kwh"}, "properties": [{"id": "color", "value": {"fixedColor": "#95E1D3", "mode": "fixed"}}]}
+        ]
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 1},
+      "id": 1,
+      "options": {
+        "legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true},
+        "tooltip": {"mode": "multi", "sort": "desc"}
+      },
+      "targets": [
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * -1}))", "refId": "A"},
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"produced_today_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)", "refId": "B"},
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_in_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)", "refId": "C"},
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"battery_out_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)", "refId": "D"}
+      ],
+      "title": "Daily Energy Flow (kWh)",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9},
+      "id": 101,
+      "title": "Financial Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}, {"color": "#FFE66D", "value": 5}, {"color": "#FF6B6B", "value": 20}]},
+          "unit": "currencyEUR"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 10},
+      "id": 10,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))", "refId": "A"}
+      ],
+      "title": "Grid Cost Today (€0.35/kWh)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#FF6B6B", "value": null}, {"color": "#FFE66D", "value": 5}, {"color": "#4ECDC4", "value": 20}]},
+          "unit": "currencyEUR"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 10},
+      "id": 11,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _value: r._value * 0.15}))", "refId": "A"}
+      ],
+      "title": "Feed-in Revenue Today (€0.15/kWh)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}, {"color": "#FFE66D", "value": 10}, {"color": "#FF6B6B", "value": 50}]},
+          "unit": "currencyEUR"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 10},
+      "id": 12,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [
+        {
+          "expr": "cost = (grid_daily_kwh * 0.35) - (pv_total_daily_kwh * 0.15)\nfrom(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\" or r._field == \"pv_total_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.grid_daily_kwh * 0.35) - (r.pv_total_daily_kwh * 0.15)}))\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Net Cost Today (Grid - Feed-in)",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}, {"color": "#FFE66D", "value": 30}, {"color": "#FF6B6B", "value": 70}]},
+          "unit": "percent"
+        }
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 10},
+      "id": 13,
+      "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
+      "targets": [
+        {
+          "expr": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"pv_total_daily_kwh\" or r._field == \"grid_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.pv_total_daily_kwh / (r.pv_total_daily_kwh + r.grid_daily_kwh)) * 100}))\n  |> last()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Self-Consumption %",
+      "type": "stat"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "currencyEUR"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "daily_cost"}, "properties": [{"id": "color", "value": {"fixedColor": "#FF6B6B", "mode": "fixed"}}]},
+          {"matcher": {"id": "byName", "options": "daily_savings"}, "properties": [{"id": "color", "value": {"fixedColor": "#4ECDC4", "mode": "fixed"}}]}
+        ]
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+      "id": 20,
+      "options": {"legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {
+          "expr": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35, _field: \"daily_cost\"}))",
+          "queryType": "flux",
+          "refId": "A"
+        },
+        {
+          "expr": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.15, _field: \"daily_savings\"}))",
+          "queryType": "flux",
+          "refId": "B"
+        }
+      ],
+      "title": "Daily Cost vs Savings (€)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "drawStyle": "line", "fillOpacity": 10, "gradientMode": "opacity", "lineInterpolation": "smooth", "lineWidth": 2},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+          "unit": "currencyEUR"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+      "id": 21,
+      "options": {"legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {
+          "expr": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\" or r._field == \"pv_total_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.grid_daily_kwh * 0.35), _field: \"net_cost\"}))\n  |> aggregateWindow(every: 1d, fn: sum, createEmpty: false)\n  |> cumulativeSum()",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Cumulative Net Cost (€)",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 22},
+      "id": 102,
+      "title": "MPPT / Tasmota Daily Breakdown",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "opacity", "lineWidth": 1},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#FFE66D", "value": null}]},
+          "unit": "kWh"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "mppt_daily"}, "properties": [{"id": "displayName", "value": "MPPT 0"}]},
+          {"matcher": {"id": "byName", "options": "mppt_daily_1"}, "properties": [{"id": "displayName", "value": "MPPT 1"}]},
+          {"matcher": {"id": "byName", "options": "mppt_daily_2"}, "properties": [{"id": "displayName", "value": "MPPT 2"}]}
+        ]
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 23},
+      "id": 30,
+      "options": {"legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"mppt_0_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"mppt_daily\"}))", "refId": "A"},
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"mppt_1_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"mppt_daily_1\"}))", "refId": "B"},
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"mppt_2_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"mppt_daily_2\"}))", "refId": "C"}
+      ],
+      "title": "MPPT Daily Production (kWh)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {"axisCenteredZero": false, "drawStyle": "bars", "fillOpacity": 80, "gradientMode": "opacity", "lineWidth": 1},
+          "mappings": [],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}]},
+          "unit": "kWh"
+        },
+        "overrides": [
+          {"matcher": {"id": "byName", "options": "tasmota_daily"}, "properties": [{"id": "displayName", "value": "Tasmota 0"}]},
+          {"matcher": {"id": "byName", "options": "tasmota_daily_1"}, "properties": [{"id": "displayName", "value": "Tasmota 1"}]}
+        ]
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 23},
+      "id": 31,
+      "options": {"legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
+      "targets": [
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"tasmota_0_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"tasmota_daily\"}))", "refId": "A"},
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"tasmota_1_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _field: \"tasmota_daily_1\"}))", "refId": "B"}
+      ],
+      "title": "Tasmota PV Daily Production (kWh)",
+      "type": "timeseries"
+    },
+    {
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 31},
+      "id": 103,
+      "title": "Monthly Projection",
+      "type": "row"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [{"options": {"0": {"color": "green", "index": 0, "text": "Projected"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#4ECDC4", "value": null}]},
+          "unit": "currencyEUR"
+        }
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 0, "y": 32},
+      "id": 40,
+      "options": {"colorMode": "value", "graphMode": "gauge", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true, "textMode": "auto"},
+      "targets": [
+        {
+          "expr": "from(bucket: \"inverter\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))\n  |> sum()\n  |> map(fn: (r) => ({r with _value: (r._value / 30) * 30}))",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Projected Monthly Grid Cost",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [{"options": {"0": {"color": "green", "index": 0, "text": "Projected"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#FF6B6B", "value": null}]},
+          "unit": "currencyEUR"
+        }
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 32},
+      "id": 41,
+      "options": {"colorMode": "value", "graphMode": "gauge", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true, "textMode": "auto"},
+      "targets": [
+        {
+          "expr": "from(bucket: \"inverter\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value - (r._value * 0.4)}))",
+          "queryType": "flux",
+          "refId": "A"
+        }
+      ],
+      "title": "Projected Monthly Savings (40% PV)",
+      "type": "gauge"
+    },
+    {
+      "datasource": {"type": "influxdb", "uid": "influxdb"},
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [{"options": {"0": {"color": "green", "index": 0, "text": "ROI"}}, "type": "value"}],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "#FFE66D", "value": null}]},
+          "unit": "months"
+        }
+      },
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 32},
+      "id": 42,
+      "options": {"colorMode": "value", "graphMode": "gauge", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true, "textMode": "auto"},
+      "targets": [
+        {"query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> last()\n  |> map(fn: (r) => ({r with _value: 12000 / (r._value * 0.35 * 30)}))", "refId": "A"}
+      ],
+      "title": "Estimated ROI (Months)",
+      "type": "stat"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["energy", "financial", "cost", "grid", "solar"],
+  "templating": {"list": []},
+  "time": {"from": "now-7d", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Energy Statistics & Financials",
+  "uid": "energy-financials",
+  "version": 1,
+  "weekStart": ""
+}
