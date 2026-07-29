@@ -97,7 +97,7 @@ def update_inverter_control(tag: str) -> tuple:
 
 def update_inverter_dashboard(tag: str) -> tuple:
     """Trigger inverter-dashboard self-update"""
-    logger.info(f"Triggering inverter-dashboard update to {tag}")
+    logger.info("Triggering inverter-dashboard update to %s", sanitize_for_logging(tag))
 
     # inverter-dashboard has self-update mechanism
     # We just need to send MQTT command or wait for it to auto-update

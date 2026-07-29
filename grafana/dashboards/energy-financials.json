@@ -104,7 +104,7 @@
       "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [
         {
-          "expr": "cost = (grid_daily_kwh * 0.35) - (pv_total_daily_kwh * 0.15)\nfrom(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\" or r._field == \"pv_total_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.grid_daily_kwh * 0.35) - (r.pv_total_daily_kwh * 0.15)}))\n  |> last()",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\" or r._field == \"pv_total_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.grid_daily_kwh * 0.35) - (r.pv_total_daily_kwh * 0.15)}))\n  |> last()",
           "queryType": "flux",
           "refId": "A"
         }
@@ -127,7 +127,7 @@
       "options": {"colorMode": "value", "graphMode": "none", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"},
       "targets": [
         {
-          "expr": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"pv_total_daily_kwh\" or r._field == \"grid_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.pv_total_daily_kwh / (r.pv_total_daily_kwh + r.grid_daily_kwh)) * 100}))\n  |> last()",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"pv_total_daily_kwh\" or r._field == \"grid_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: if (r.pv_total_daily_kwh + r.grid_daily_kwh) == 0.0 then 0.0 else (r.pv_total_daily_kwh / (r.pv_total_daily_kwh + r.grid_daily_kwh)) * 100}))\n  |> last()",
           "queryType": "flux",
           "refId": "A"
         }
@@ -155,12 +155,12 @@
       "options": {"legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
       "targets": [
         {
-          "expr": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35, _field: \"daily_cost\"}))",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35, _field: \"daily_cost\"}))",
           "queryType": "flux",
           "refId": "A"
         },
         {
-          "expr": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.15, _field: \"daily_savings\"}))",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.15, _field: \"daily_savings\"}))",
           "queryType": "flux",
           "refId": "B"
         }
@@ -184,7 +184,7 @@
       "options": {"legend": {"calcs": ["lastNotNull", "mean", "sum"], "displayMode": "table", "placement": "bottom", "showLegend": true}, "tooltip": {"mode": "multi", "sort": "desc"}},
       "targets": [
         {
-          "expr": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\" or r._field == \"pv_total_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.grid_daily_kwh * 0.35), _field: \"net_cost\"}))\n  |> aggregateWindow(every: 1d, fn: sum, createEmpty: false)\n  |> cumulativeSum()",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\" or r._field == \"pv_total_daily_kwh\")\n  |> pivot(rowKey: \"_time\", columnKey: \"_field\", valueColumn: \"_value\")\n  |> map(fn: (r) => ({r with _value: (r.grid_daily_kwh * 0.35), _field: \"net_cost\"}))\n  |> aggregateWindow(every: 1d, fn: sum, createEmpty: false)\n  |> cumulativeSum()",
           "queryType": "flux",
           "refId": "A"
         }
@@ -271,7 +271,7 @@
       "options": {"colorMode": "value", "graphMode": "gauge", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true, "textMode": "auto"},
       "targets": [
         {
-          "expr": "from(bucket: \"inverter\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))\n  |> sum()\n  |> map(fn: (r) => ({r with _value: (r._value / 30) * 30}))",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"inverter\")\n  |> filter(fn: (r) => r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))\n  |> sum()",
           "queryType": "flux",
           "refId": "A"
         }
@@ -294,7 +294,7 @@
       "options": {"colorMode": "value", "graphMode": "gauge", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "showThresholdLabels": false, "showThresholdMarkers": true, "textMode": "auto"},
       "targets": [
         {
-          "expr": "from(bucket: \"inverter\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value - (r._value * 0.4)}))",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: -30d)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"grid_daily_kwh\")\n  |> aggregateWindow(every: 1d, fn: last, createEmpty: false)\n  |> map(fn: (r) => ({r with _value: r._value * 0.35}))\n  |> sum()\n  |> map(fn: (r) => ({r with _value: r._value - (r._value * 0.4)}))",
           "queryType": "flux",
           "refId": "A"
         }
