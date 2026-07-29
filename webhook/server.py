@@ -11,8 +11,10 @@ Or as Docker container alongside other services.
 """
 
 import os
+import re
 import hmac
 import hashlib
+import shlex
 import subprocess
 import logging
 from flask import Flask, request, jsonify
@@ -28,6 +30,11 @@ ALLOWED_BRANCHES = ["main", "master"]
 
 # SSH config for Cerbo (mounted from host or configured in container)
 CERBO_HOST = os.environ.get("CERBO_HOST", "Cerbo")
+
+# Git tags are restricted to this pattern before they are ever interpolated
+# into a remote shell command (see update_inverter_control) to prevent
+# command injection via a crafted release tag name.
+TAG_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
 
 
 def verify_signature(payload: bytes, signature: str) -> bool:
@@ -57,16 +64,24 @@ def run_command(cmd: list, timeout: int = 300) -> tuple:
 
 def update_inverter_control(tag: str) -> tuple:
     """Update inverter-control on Cerbo via SSH"""
-    logger.info(f"Updating inverter-control to {tag}")
+    if not TAG_PATTERN.match(tag):
+        logger.warning("Rejected release tag with invalid format")
+        return False, "Failed: invalid tag format"
+
+    logger.info(f"Updating inverter-control to {sanitize_for_logging(tag)}")
 
     # Use SSH to update on Cerbo
     # Cerbo doesn't have git, so we use curl to download files
+    # `tag` is validated against TAG_PATTERN above and shell-quoted below,
+    # since it is otherwise attacker-controlled (comes from the GitHub
+    # release payload) and is interpolated into a command run by a remote shell.
+    quoted_tag = shlex.quote(tag)
     commands = [
         # Download updated files
-        f"cd /data/inverter-control && "
-        f"for f in main.py config.py victron.py homeassistant.py mqtt_bridge.py ui_config.py keepalive.py console_server.py version; do "
-        f"curl -sL 'https://raw.githubusercontent.com/victron-venus/inverter-control/{tag}/'$f -o $f.new 2>/dev/null && mv $f.new $f; "
-        f"done",
+        "cd /data/inverter-control && "
+        "for f in main.py config.py victron.py homeassistant.py mqtt_bridge.py ui_config.py keepalive.py console_server.py version; do "
+        f"curl -sL 'https://raw.githubusercontent.com/victron-venus/inverter-control/{quoted_tag}/'\"$f\" -o \"$f.new\" 2>/dev/null && mv \"$f.new\" \"$f\"; "
+        "done",
         # Restart service
         "svc -t /service/inverter-control",
     ]
