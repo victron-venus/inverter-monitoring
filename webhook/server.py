@@ -57,7 +57,7 @@ def run_command(cmd: list, timeout: int = 300) -> tuple:
 
 def update_inverter_control(tag: str) -> tuple:
     """Update inverter-control on Cerbo via SSH"""
-    logger.info(f"Updating inverter-control to {tag}")
+    logger.info("Updating inverter-control to %s", sanitize_for_logging(tag))
 
     # Use SSH to update on Cerbo
     # Cerbo doesn't have git, so we use curl to download files
@@ -81,7 +81,7 @@ def update_inverter_control(tag: str) -> tuple:
 
 def update_inverter_dashboard(tag: str) -> tuple:
     """Trigger inverter-dashboard self-update"""
-    logger.info(f"Triggering inverter-dashboard update to {tag}")
+    logger.info("Triggering inverter-dashboard update to %s", sanitize_for_logging(tag))
 
     # inverter-dashboard has self-update mechanism
     # We just need to send MQTT command or wait for it to auto-update
