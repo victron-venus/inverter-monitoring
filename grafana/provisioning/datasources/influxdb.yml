@@ -11,16 +11,7 @@ datasources:
       version: Flux
       organization: home
       defaultBucket: inverter
-      tlsSkipVerify: true
       httpTimeout: 60
       minInterval: "30s"
     secureJsonData:
       token: $INFLUX_TOKEN
-
-  - name: Loki
-    type: loki
-    access: proxy
-    url: http://loki:3100
-    uid: loki
-    jsonData:
-      maxLines: 1000

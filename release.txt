@@ -1,4 +1,30 @@
-## v1.1.1
+Inverter Monitoring v1.2.0
+===========================
 
-- Ecosystem README cross-links and documentation polish
-- Dependabot / CodeQL workflow alignment
+🔧 Telegraf Configuration Overhaul (fixes NaN values)
+- Explicit field type definitions for all MQTT JSON fields → Telegraf now enforces float type, silently drops NaN instead of emitting it
+- Added explicit field definitions for: setpoint, battery_power, battery_voltage, battery_current, battery_soc, mppt_total, pv_power, pv_voltage, pv_current, pv_total, ev_power, ev_voltage, ev_current, car_soc, water_level, uptime
+- Added individual MPPT fields (mppt_0_power, mppt_1_power, mppt_2_power) and Tasmota fields (tasmota_0_power, tasmota_1_power)
+- Added daily energy stats fields (mppt_daily, tasmota_daily)
+- Added tag_keys for battery chains to reduce cardinality
+
+⚡ Performance Optimizations
+- Increased collection interval: 5s → 10s (reduces CPU ~50%)
+- Added collection_jitter: 1s to spread load
+- flush_interval: 10s (matches interval)
+- Added fielddrop for high-cardinality fields (CPU time_*, network protocol counters)
+
+📊 New Metrics Added
+- MPPT individual consumer: mppt/+/state with power, voltage, current per tracker
+- Battery chains now aggregated with topic tags (reduces cardinality)
+- System monitoring: CPU, memory, disk, network (low overhead)
+- Docker monitoring: container resource usage (optional)
+
+🔧 Telegraf Agent Tuning
+- metric_batch_size: 1000, metric_buffer_limit: 10000
+- precision: 0s (nanosecond precision)
+- hostname: cerbo
+
+📦 Deployment
+- telegraf.conf deployed to /data/telegraf/telegraf.conf on Cerbo
+- Restart telegraf container to apply: `docker restart telegraf` or `svc -t /service/telegraf`
