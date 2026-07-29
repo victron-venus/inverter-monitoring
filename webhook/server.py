@@ -53,7 +53,7 @@ def verify_signature(payload: bytes, signature: str) -> bool:
 def run_command(cmd: list, timeout: int = 300) -> tuple:
     """Run command and return (success, output)"""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
         return result.returncode == 0, result.stdout + result.stderr
     except subprocess.TimeoutExpired:
         return False, "Command timed out"
@@ -81,7 +81,7 @@ def update_inverter_control(tag: str) -> tuple:
         # Download updated files
         "cd /data/inverter-control && "
         "for f in main.py config.py victron.py homeassistant.py mqtt_bridge.py ui_config.py keepalive.py console_server.py version; do "
-        f"curl -sL 'https://raw.githubusercontent.com/victron-venus/inverter-control/{tag}/'\"$f\" -o \"$f.new\" 2>/dev/null && mv \"$f.new\" \"$f\"; "
+        f'curl -sL \'https://raw.githubusercontent.com/victron-venus/inverter-control/{tag}/\'"$f" -o "$f.new" 2>/dev/null && mv "$f.new" "$f"; '
         "done",
         # Restart service
         "svc -t /service/inverter-control",
@@ -123,14 +123,16 @@ def update_inverter_dashboard(tag: str) -> tuple:
 def run_deploy_script():
     """Execute the deploy script and handle results"""
     try:
-        result = subprocess.run([DEPLOY_SCRIPT], capture_output=True, text=True, timeout=300)
+        result = subprocess.run(
+            [DEPLOY_SCRIPT], capture_output=True, text=True, timeout=300, check=False
+        )
 
         if result.returncode == 0:
             logger.info("Deploy successful")
             return jsonify({"status": "deployed"})
-        else:
-            logger.exception(f"Deploy failed: {result.stderr}")
-            return jsonify({"status": "failed", "error": result.stderr}), 500
+
+        logger.exception("Deploy failed: %s", sanitize_for_logging(result.stderr))
+        return jsonify({"status": "failed", "error": result.stderr}), 500
 
     except subprocess.TimeoutExpired:
         logger.exception("Deploy timed out")
@@ -168,8 +170,16 @@ def webhook():
 
 
 def sanitize_for_logging(value: str) -> str:
-    """Sanitize user input for logging - removes potential injection vectors"""
-    return "".join(c for c in value if c.isalnum() or c in "-_")
+    """Sanitize user input for logging - removes potential injection vectors.
+
+    Only allows alphanumeric characters, dash, and underscore.
+    Truncates to 50 chars to prevent log flooding.
+    """
+    if not value:
+        return "<empty>"
+    # Strict allowlist: only alphanumeric, dash, underscore
+    sanitized = "".join(c for c in value if c.isalnum() or c in "-_")
+    return sanitized[:50] if sanitized else "<invalid>"
 
 
 def handle_release_event(payload: dict):
@@ -223,7 +233,9 @@ def handle_push_event(payload: dict):
     commits = payload.get("commits", [])
     pusher = payload.get("pusher", {}).get("name", "unknown")
 
-    logger.info(f"Received push to {sanitize_for_logging(branch)} by {sanitize_for_logging(pusher)} ({len(commits)} commits)")
+    logger.info(
+        f"Received push to {sanitize_for_logging(branch)} by {sanitize_for_logging(pusher)} ({len(commits)} commits)"
+    )
 
     return run_deploy_script()
 
