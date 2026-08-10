@@ -15,6 +15,7 @@ import re
 import hmac
 import hashlib
 import subprocess
+import base64
 import logging
 from flask import Flask, request, jsonify
 
@@ -170,16 +171,16 @@ def webhook():
 
 
 def sanitize_for_logging(value: str) -> str:
-    """Sanitize user input for logging - removes potential injection vectors.
+    """Sanitize user input for logging - prevents injection, preserves data.
 
-    Only allows alphanumeric characters, dash, and underscore.
+    Allows alphanumeric, dash, underscore. Encodes other chars via base64.
     Truncates to 50 chars to prevent log flooding.
     """
     if not value:
         return "<empty>"
-    # Strict allowlist: only alphanumeric, dash, underscore
-    sanitized = "".join(c for c in value if c.isalnum() or c in "-_")
-    return sanitized[:50] if sanitized else "<invalid>"
+    if all(c.isalnum() or c in "-_" for c in value):
+        return value[:50]
+    return base64.b64encode(value.encode("utf-8")).decode("ascii")[:50]
 
 
 def handle_release_event(payload: dict):
