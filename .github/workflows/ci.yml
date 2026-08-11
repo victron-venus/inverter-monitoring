@@ -16,6 +16,6 @@ jobs:
         with:
           python-version: '3.x'
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: pip install --only-binary :all: pre-commit
       - name: Run pre-commit
         run: pre-commit run --all-files
