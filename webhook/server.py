@@ -63,28 +63,45 @@ def run_command(cmd: list, timeout: int = 300) -> tuple:
 
 
 def update_inverter_control(tag: str) -> tuple:
-    """Update inverter-control on Cerbo via SSH"""
+    """Update inverter-control on Cerbo via SSH.
+
+    Downloads the release tarball for `tag` and unpacks the packaged files
+    (main.py, the inverter_control/ package, version, gitHubInfo) into
+    /data/inverter-control, preserving local-only config (local_config.py,
+    ui_config_local.py, certificates, services/).
+
+    `tag` is otherwise attacker-controlled (comes from the GitHub release
+    payload) and is interpolated into a command run by a remote shell, so it
+    is validated against TAG_PATTERN above (restricted to a safe character
+    set) and wrapped in single quotes before being embedded here. Note:
+    shlex.quote() is not usable since `tag` is embedded inside a string that
+    is already single-quoted for the remote shell.
+    """
     if not TAG_PATTERN.match(tag):
         logger.warning("Rejected release tag with invalid format")
         return False, "Failed: invalid tag format"
 
     logger.info(f"Updating inverter-control to {sanitize_for_logging(tag)}")
 
-    # Use SSH to update on Cerbo
-    # Cerbo doesn't have git, so we use curl to download files
-    # `tag` is otherwise attacker-controlled (comes from the GitHub release
-    # payload) and is interpolated into a command run by a remote shell, so
-    # it is validated against TAG_PATTERN above (restricted to a safe
-    # character set) before being embedded here. Note: shlex.quote() is not
-    # usable here since `tag` is embedded inside a string that is already
-    # single-quoted for the remote shell, so its escaping would be ineffective.
     commands = [
-        # Download updated files
-        "cd /data/inverter-control && "
-        "for f in main.py config.py victron.py homeassistant.py mqtt_bridge.py ui_config.py keepalive.py console_server.py version; do "
-        f'curl -sL \'https://raw.githubusercontent.com/victron-venus/inverter-control/{tag}/\'"$f" -o "$f.new" 2>/dev/null && mv "$f.new" "$f"; '
-        "done",
-        # Restart service
+        # Download the release tarball and unpack the packaged files.
+        # `set -e` + `curl -f` abort on any failure (a 404 must not be
+        # treated as success - curl -sL would return exit 0 on HTTP 404).
+        "set -e; "
+        "DEPLOY=/data/.inverter-control-deploy; "
+        'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
+        f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
+        '| tar -xz -C "$DEPLOY" --strip-components=1; '
+        'cp "$DEPLOY"/main.py /data/inverter-control/main.py; '
+        'cp -r "$DEPLOY"/inverter_control /data/inverter-control/; '
+        'cp "$DEPLOY"/version /data/inverter-control/version; '
+        'cp "$DEPLOY"/gitHubInfo /data/inverter-control/gitHubInfo; '
+        # Best effort: remove 404 stubs written by older flat-file deploys
+        "cd /data/inverter-control; "
+        "for f in config.py console_server.py homeassistant.py keepalive.py mqtt_bridge.py ui_config.py victron.py; do "
+        'if [ "$(cat "$f" 2>/dev/null)" = "404: Not Found" ]; then rm -f "$f"; fi; done; '
+        'rm -rf "$DEPLOY"',
+        # Restart the service
         "svc -t /service/inverter-control",
     ]
 
