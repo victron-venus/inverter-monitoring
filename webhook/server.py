@@ -83,6 +83,10 @@ def update_inverter_control(tag: str) -> tuple:
         logger.warning("Rejected release tag with invalid format")
         return False, "Failed: invalid tag format"
 
+    # The `version` file in the package carries no "v" prefix (e.g. 1.18.13),
+    # while GitHub tag_name does (v1.18.13). Normalize for the check below.
+    version_expected = tag[1:] if tag.startswith("v") else tag
+
     logger.info(f"Updating inverter-control to {sanitize_for_logging(tag)}")
 
     commands = [
@@ -98,7 +102,7 @@ def update_inverter_control(tag: str) -> tuple:
         'rm -rf "$DEPLOY"',
         # Verify the installed version matches the release before reporting
         # success, so a stale/partial install is treated as a failure.
-        f'[ "$(cat /data/inverter-control/version 2>/dev/null)" = "{tag}" ]',
+        f'[ "$(cat /data/inverter-control/version 2>/dev/null)" = "{version_expected}" ]',
     ]
 
     for cmd in commands:
