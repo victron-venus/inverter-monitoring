@@ -65,10 +65,12 @@ def run_command(cmd: list, timeout: int = 300) -> tuple:
 def update_inverter_control(tag: str) -> tuple:
     """Update inverter-control on Cerbo via SSH.
 
-    Downloads the release tarball for `tag` and unpacks the packaged files
-    (main.py, the inverter_control/ package, version, gitHubInfo) into
-    /data/inverter-control, preserving local-only config (local_config.py,
-    ui_config_local.py, certificates, services/).
+    Downloads the release tarball for `tag` and runs the repo's own
+    self-update script (update.sh) on the device. All layout knowledge -
+    runtime files, daemontools services, /service symlinks, device-local
+    config preservation, restart order - lives in that script, so this
+    webhook does not hardcode any file paths and adding files or services
+    in inverter-control requires no change here.
 
     `tag` is otherwise attacker-controlled (comes from the GitHub release
     payload) and is interpolated into a command run by a remote shell, so it
@@ -84,7 +86,7 @@ def update_inverter_control(tag: str) -> tuple:
     logger.info(f"Updating inverter-control to {sanitize_for_logging(tag)}")
 
     commands = [
-        # Download the release tarball and unpack the packaged files.
+        # Download the release tarball and let update.sh install it.
         # `set -e` + `curl -f` abort on any failure (a 404 must not be
         # treated as success - curl -sL would return exit 0 on HTTP 404).
         "set -e; "
@@ -92,17 +94,11 @@ def update_inverter_control(tag: str) -> tuple:
         'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
         f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
         '| tar -xz -C "$DEPLOY" --strip-components=1; '
-        'cp "$DEPLOY"/main.py /data/inverter-control/main.py; '
-        'cp -r "$DEPLOY"/inverter_control /data/inverter-control/; '
-        'cp "$DEPLOY"/version /data/inverter-control/version; '
-        'cp "$DEPLOY"/gitHubInfo /data/inverter-control/gitHubInfo; '
-        # Best effort: remove 404 stubs written by older flat-file deploys
-        "cd /data/inverter-control; "
-        "for f in config.py console_server.py homeassistant.py keepalive.py mqtt_bridge.py ui_config.py victron.py; do "
-        'if [ "$(cat "$f" 2>/dev/null)" = "404: Not Found" ]; then rm -f "$f"; fi; done; '
+        'sh "$DEPLOY/update.sh"; '
         'rm -rf "$DEPLOY"',
-        # Restart the service
-        "svc -t /service/inverter-control",
+        # Verify the installed version matches the release before reporting
+        # success, so a stale/partial install is treated as a failure.
+        f'[ "$(cat /data/inverter-control/version 2>/dev/null)" = "{tag}" ]',
     ]
 
     for cmd in commands:
