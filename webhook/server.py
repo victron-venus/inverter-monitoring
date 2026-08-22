@@ -10,14 +10,15 @@ Run with: python server.py
 Or as Docker container alongside other services.
 """
 
+import base64
+import hashlib
+import hmac
+import logging
 import os
 import re
-import hmac
-import hashlib
 import subprocess
-import base64
-import logging
-from flask import Flask, request, jsonify
+
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -58,7 +59,8 @@ def run_command(cmd: list, timeout: int = 300) -> tuple:
         return result.returncode == 0, result.stdout + result.stderr
     except subprocess.TimeoutExpired:
         return False, "Command timed out"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - boundary: report any deploy failure to caller
+        logger.warning("Deploy command failed: %s", e)
         return False, str(e)
 
 
@@ -85,7 +87,7 @@ def update_inverter_control(tag: str) -> tuple:
 
     # The `version` file in the package carries no "v" prefix (e.g. 1.18.13),
     # while GitHub tag_name does (v1.18.13). Normalize for the check below.
-    version_expected = tag[1:] if tag.startswith("v") else tag
+    version_expected = tag.removeprefix("v")
 
     logger.info(f"Updating inverter-control to {sanitize_for_logging(tag)}")
 
@@ -93,13 +95,15 @@ def update_inverter_control(tag: str) -> tuple:
         # Download the release tarball and let update.sh install it.
         # `set -e` + `curl -f` abort on any failure (a 404 must not be
         # treated as success - curl -sL would return exit 0 on HTTP 404).
-        "set -e; "
-        "DEPLOY=/data/.inverter-control-deploy; "
-        'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
-        f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
-        '| tar -xz -C "$DEPLOY" --strip-components=1; '
-        'sh "$DEPLOY/update.sh"; '
-        'rm -rf "$DEPLOY"',
+        (
+            "set -e; "
+            "DEPLOY=/data/.inverter-control-deploy; "
+            'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
+            f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
+            '| tar -xz -C "$DEPLOY" --strip-components=1; '
+            'sh "$DEPLOY/update.sh"; '
+            'rm -rf "$DEPLOY"',
+        ),
         # Verify the installed version matches the release before reporting
         # success, so a stale/partial install is treated as a failure.
         f'[ "$(cat /data/inverter-control/version 2>/dev/null)" = "{version_expected}" ]',
@@ -259,7 +263,7 @@ def handle_push_event(payload: dict):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 9000))
+    port = int(os.environ.get("PORT", "9000"))
     host = os.environ.get("HOST", "127.0.0.1")
     logger.info(f"Starting webhook server on {host}:{port}")
     app.run(host=host, port=port)
