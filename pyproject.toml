@@ -1,3 +1,14 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+# Not an installable distribution: repo holds deployment scripts, Grafana
+# dashboards and a standalone webhook server. Declare zero packages so
+# setuptools skips flat-layout auto-discovery (it previously aborted on
+# ['webhook', 'grafana']) and the toolkit's 'pip install -e .' succeeds.
+[tool.setuptools]
+packages = []
+
 [tool.pylint.messages_control]
 disable = [
     "E0401",  # Unable to import (Venus OS / system libs not in venv)
