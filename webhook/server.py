@@ -115,7 +115,10 @@ def update_inverter_control(tag: str) -> tuple:
     for cmd in commands:
         success, output = run_command(["ssh", CERBO_HOST, cmd])
         if not success:
-            return False, f"Failed: {output}"
+            logger.warning("Control update failed: %s", sanitize_for_logging(output))
+            # Do not echo remote command output back to the caller
+            # (stack-trace-exposure): details are logged above.
+            return False, "Failed: see server logs"
 
     return True, f"Updated to {tag}"
 
@@ -142,7 +145,8 @@ def update_inverter_dashboard(tag: str) -> tuple:
 
     if success:
         return True, f"Restarted dashboard container to update to {tag}"
-    return False, output
+    logger.warning("Dashboard update failed: %s", sanitize_for_logging(output))
+    return False, "Failed: see server logs"
 
 
 def run_deploy_script():
