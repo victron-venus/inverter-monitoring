@@ -102,7 +102,7 @@ def update_inverter_control(tag: str) -> tuple:
             f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
             '| tar -xz -C "$DEPLOY" --strip-components=1; '
             'sh "$DEPLOY/update.sh"; '
-            'rm -rf "$DEPLOY"',
+            'rm -rf "$DEPLOY"'
         ),
         # Verify the installed version matches the release before reporting
         # success, so a stale/partial install is treated as a failure.
