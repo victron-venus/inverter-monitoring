@@ -9,3 +9,6 @@ C*.md
 __pycache__/
 *.bak
 *.tmp
+
+# Python build artifacts
+*.egg-info/

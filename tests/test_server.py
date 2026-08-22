@@ -125,11 +125,13 @@ def test_update_control_success(monkeypatch):
     assert "refs/tags/v1.2.3" in calls[0][2]
 
 
-def test_update_control_fails_on_first_command(monkeypatch):
+def test_update_control_failure_returns_generic_message(monkeypatch):
     monkeypatch.setattr(server, "run_command", lambda cmd, timeout=300: (False, "ssh down"))
     ok, msg = server.update_inverter_control("v1.2.3")
     assert ok is False
-    assert msg == "Failed: ssh down"
+    # Raw remote output must not reach the HTTP response.
+    assert msg == "Failed: see server logs"
+    assert "ssh down" not in msg
 
 
 def test_update_control_fails_on_version_check(monkeypatch):
@@ -158,7 +160,9 @@ def test_update_dashboard_failure(monkeypatch):
     monkeypatch.setattr(server, "run_command", lambda cmd, timeout=60: (False, "curl: (7) refused"))
     ok, msg = server.update_inverter_dashboard("v2.0.0")
     assert ok is False
-    assert "refused" in msg
+    # Raw curl output must not reach the HTTP response.
+    assert msg == "Failed: see server logs"
+    assert "refused" not in msg
 
 
 # ---------------------------------------------------------------- deploy script paths
