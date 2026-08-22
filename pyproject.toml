@@ -2,6 +2,10 @@
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "inverter-monitoring"
+version = "0.0.0"
+
 # Not an installable distribution: repo holds deployment scripts, Grafana
 # dashboards and a standalone webhook server. Declare zero packages so
 # setuptools skips flat-layout auto-discovery (it previously aborted on
