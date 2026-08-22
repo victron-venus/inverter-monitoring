@@ -25,7 +25,7 @@ jobs:
 
     - name: Extract tag
       id: tag
-      run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
     - name: Create or update GitHub Release
       env:
