@@ -81,7 +81,10 @@ def update_inverter_control(tag: str) -> tuple:
     shlex.quote() is not usable since `tag` is embedded inside a string that
     is already single-quoted for the remote shell.
     """
-    if not TAG_PATTERN.match(tag):
+    # fullmatch() (not just match()) makes the whole-string validation
+    # explicit: no character outside [A-Za-z0-9._-] may pass, so the tag
+    # cannot break out of the single quotes in the remote shell command.
+    if not TAG_PATTERN.fullmatch(tag):
         logger.warning("Rejected release tag with invalid format")
         return False, "Failed: invalid tag format"
 
@@ -154,7 +157,9 @@ def run_deploy_script():
             return jsonify({"status": "deployed"})
 
         logger.exception("Deploy failed: %s", sanitize_for_logging(result.stderr))
-        return jsonify({"status": "failed", "error": result.stderr}), 500
+        # Do not echo raw stderr back to the caller (stack-trace-exposure):
+        # the details are logged above, the response stays generic.
+        return jsonify({"status": "failed", "error": "deploy failed"}), 500
 
     except subprocess.TimeoutExpired:
         logger.exception("Deploy timed out")
