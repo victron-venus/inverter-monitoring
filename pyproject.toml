@@ -5,6 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "inverter-monitoring"
 version = "0.0.0"
+# Runtime dep of webhook/server.py (the only Python entrypoint here).
+dependencies = ["flask>=3.0"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]
+test = ["pytest", "pytest-cov"]
 
 # Not an installable distribution: repo holds deployment scripts, Grafana
 # dashboards and a standalone webhook server. Declare zero packages so
@@ -27,6 +33,7 @@ disable = [
     "C0413",  # Wrong import position
     "W0718",  # Catching general Exception
     "W0613",  # Unused argument
+    "W0621",  # Redefined outer name (pytest fixtures are injected as args)
 ]
 
 [tool.ruff]
