@@ -10,14 +10,15 @@ Run with: python server.py
 Or as Docker container alongside other services.
 """
 
+import base64
+import hashlib
+import hmac
+import logging
 import os
 import re
-import hmac
-import hashlib
 import subprocess
-import base64
-import logging
-from flask import Flask, request, jsonify
+
+from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -58,7 +59,8 @@ def run_command(cmd: list, timeout: int = 300) -> tuple:
         return result.returncode == 0, result.stdout + result.stderr
     except subprocess.TimeoutExpired:
         return False, "Command timed out"
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - boundary: report any deploy failure to caller
+        logger.warning("Deploy command failed: %s", e)
         return False, str(e)
 
 
@@ -79,13 +81,16 @@ def update_inverter_control(tag: str) -> tuple:
     shlex.quote() is not usable since `tag` is embedded inside a string that
     is already single-quoted for the remote shell.
     """
-    if not TAG_PATTERN.match(tag):
+    # fullmatch() (not just match()) makes the whole-string validation
+    # explicit: no character outside [A-Za-z0-9._-] may pass, so the tag
+    # cannot break out of the single quotes in the remote shell command.
+    if not TAG_PATTERN.fullmatch(tag):
         logger.warning("Rejected release tag with invalid format")
         return False, "Failed: invalid tag format"
 
     # The `version` file in the package carries no "v" prefix (e.g. 1.18.13),
     # while GitHub tag_name does (v1.18.13). Normalize for the check below.
-    version_expected = tag[1:] if tag.startswith("v") else tag
+    version_expected = tag.removeprefix("v")
 
     logger.info(f"Updating inverter-control to {sanitize_for_logging(tag)}")
 
@@ -93,13 +98,15 @@ def update_inverter_control(tag: str) -> tuple:
         # Download the release tarball and let update.sh install it.
         # `set -e` + `curl -f` abort on any failure (a 404 must not be
         # treated as success - curl -sL would return exit 0 on HTTP 404).
-        "set -e; "
-        "DEPLOY=/data/.inverter-control-deploy; "
-        'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
-        f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
-        '| tar -xz -C "$DEPLOY" --strip-components=1; '
-        'sh "$DEPLOY/update.sh"; '
-        'rm -rf "$DEPLOY"',
+        (
+            "set -e; "
+            "DEPLOY=/data/.inverter-control-deploy; "
+            'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
+            f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
+            '| tar -xz -C "$DEPLOY" --strip-components=1; '
+            'sh "$DEPLOY/update.sh"; '
+            'rm -rf "$DEPLOY"'
+        ),
         # Verify the installed version matches the release before reporting
         # success, so a stale/partial install is treated as a failure.
         f'[ "$(cat /data/inverter-control/version 2>/dev/null)" = "{version_expected}" ]',
@@ -150,7 +157,9 @@ def run_deploy_script():
             return jsonify({"status": "deployed"})
 
         logger.exception("Deploy failed: %s", sanitize_for_logging(result.stderr))
-        return jsonify({"status": "failed", "error": result.stderr}), 500
+        # Do not echo raw stderr back to the caller (stack-trace-exposure):
+        # the details are logged above, the response stays generic.
+        return jsonify({"status": "failed", "error": "deploy failed"}), 500
 
     except subprocess.TimeoutExpired:
         logger.exception("Deploy timed out")
@@ -259,7 +268,7 @@ def handle_push_event(payload: dict):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 9000))
+    port = int(os.environ.get("PORT", "9000"))
     host = os.environ.get("HOST", "127.0.0.1")
     logger.info(f"Starting webhook server on {host}:{port}")
     app.run(host=host, port=port)
