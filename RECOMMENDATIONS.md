@@ -80,19 +80,33 @@ filtered_gt  = ema(effective_gt, EMA_ALPHA)
 
 1. **Collect ≥ 24 h of data** after enabling the `vue` measurement (both inputs write
    continuously once deployed).
-2. Run the analyzer on the Cerbo/NAS (stdlib only, no pip installs):
+2. Run the analyzer **on the host that can reach InfluxDB** (Cerbo or the NAS — the
+   NAS system python 3.8 works; stdlib only, no pip installs):
    ```bash
-   export INFLUX_TOKEN=...            # read-write token for the bucket
+   ssh synology
+   cd /volume1/docker/inverter-monitoring && git pull   # or scp analysis/grid_correlation.py
+   set -a; . ./.env; set +a                             # supplies INFLUX_TOKEN/org/bucket
    python3 analysis/grid_correlation.py --hours 24 \
        --url http://localhost:8086 --token "$INFLUX_TOKEN"
    ```
+   ⚠️ Do NOT try an SSH tunnel from your workstation: Synology sshd sets
+   `AllowTcpForwarding no` — connections through `-L` are reset.
    Offline sanity mode (no InfluxDB): add `--demo`.
 3. Read the report:
-   - `corr(raw, derived)` — should be strongly positive (> +0.8). If < 0.5 the script
-     warns: check that Home Total covers all loads and PV totals match.
-   - `best lag` — Vue-derived signal lagging raw by a couple of samples is normal;
-     large lag (> ~30 s) means MQTT/dbus latency is hurting the blend.
-   - Top candidates table — ranked by near-zero share first, then low σ.
+   - `fetched <key>: N minute buckets` + `time-intersection: M aligned buckets` — all
+     four fields are averaged into 1-minute buckets and intersected on time, because
+     they went live at different dates. If M is small (< several hours of buckets),
+     the numbers are provisional: wait until the `vue` measurement has ≥ 24 h.
+   - `corr(raw, derived)` — should be strongly positive (> +0.8) once enough data
+     exists. If < 0.5 the script warns: Home Total must cover all loads and PV totals
+     must match metered PV. On first live runs (2026-08-23) correlation was weak and
+     the derived grid was *rougher* than the CT meter (σ 181 W vs 42 W) with only one
+     hour of overlap — do not tune on such a window.
+   - `best lag` — Vue-derived lagging raw by a couple of samples is normal;
+     large lag means MQTT/dbus latency is hurting the blend.
+   - Top candidates table — ranked by near-zero share first, then low σ. Beware
+     night-time windows: when PV is off and loads are low, near-zero% is inflated for
+     every candidate and the ranking degenerates.
 4. Apply the printed block to inverter-control `local_config.py`:
    ```python
    ENABLE_GRID_SMOOTHING_WITH_HOME = True   # ← without this nothing changes!
@@ -181,3 +195,17 @@ Status after v1.3.0 (checked 2026-08-23, ~30 min post-merge):
 - [ ] Panels render non-empty for last 6 h — eyeball in browser after a few hours
 
 Repeat these checks after every release that touches `telegraf.conf` or dashboards.
+
+## 6. First tuning round — status and expectations
+
+Live analyzer run 2026-08-23 (~1 h after the `vue` input went live): only 58 aligned
+minute buckets, corr +0.367, derived σ ≈ 181 W vs raw σ ≈ 42 W. **Do not apply those
+coefficients yet.** The weak correlation with a rougher Vue-derived signal suggests
+Home Total may not cover every load (unmonitored circuits make `home − pv` drift away
+from the true grid). Plan:
+
+1. Let the stack collect ≥ 24 h (ideally including a sunny midday).
+2. Compare in Grafana: "Home Circuits Breakdown" sum vs `loads_total*` — a large
+   unexplained remainder means missing circuits; fix channel naming first.
+3. Re-run the analyzer over a full day; only then apply its block to
+   inverter-control `local_config.py` and iterate per §3.
