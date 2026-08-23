@@ -170,6 +170,43 @@ near-zero share of `filtered_gt` as high as possible. Weight is capped at 0.95
 in the sweep so the CT meter always keeps some corrective influence (Vue
 calibration drift protection).
 
+### Applying the coefficients in inverter-control
+
+The four values the analyzer prints map onto these knobs (defaults live in
+`inverter_control/config.py`, site overrides go into `local_config.py` on the
+Cerbo — untracked, created from `local_config.example.py`):
+
+| Knob | Default | Role |
+|---|---|---|
+| `ENABLE_GRID_SMOOTHING_WITH_HOME` | `False` | Master switch for the blend — without it the other three do nothing |
+| `GRID_SMOOTHING_HOME_WEIGHT` (`w`) | `0.7` | **Weight between the two grid signals**: how much of `filtered_gt` comes from the Vue-derived value vs the raw CT meter. Higher = smoother but trusts Vue calibration more; keep ≤ ~0.95 so the CT meter can still correct drift |
+| `GRID_SMOOTHING_DERIVED_ALPHA` | `0.1` | EMA speed of the *derived* signal itself. Lower = calmer derived line, slower to follow real load steps |
+| `EMA_ALPHA` | `0.3` | Final smoothing of the blended value that the controller acts on. Lower = smoother setpoint behaviour, more lag |
+
+All are validated in the 0.0–1.0 range by inverter-control at startup.
+
+Procedure:
+
+```bash
+# on the workstation: push updated local_config.py to the Cerbo and restart
+cd ../inverter-control && ./deploy.sh        # copies config + restarts the service
+```
+
+or edit `local_config.py` directly on the Cerbo and restart
+(`/service/inverter-control`). Then verify:
+
+1. Grafana "Grid Raw vs Smoothed": `filtered_gt` must visibly detach from raw.
+   If it still overlaps exactly, the master switch is still `False`.
+2. Re-run the analyzer after a day: its report prints both raw and stored
+   `filtered_gt` metrics, so improvement is measurable (σ down, near-zero up).
+3. Rollback if behaviour degrades: set `ENABLE_GRID_SMOOTHING_WITH_HOME = False`
+   (blend off) rather than zeroing weights.
+
+Tuning direction cheat-sheet: sawtooth still visible → raise
+`GRID_SMOOTHING_HOME_WEIGHT` a step (e.g. +0.05–0.1); controller reacts too
+slowly to real load changes → raise `DERIVED_ALPHA`/`EMA_ALPHA`; smoothed line
+shows a constant offset vs reality → lower the weight (Vue calibration drift).
+
 ## Embedding in Go Dashboard
 
 Grafana panels can be embedded via iframe:
