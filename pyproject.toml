@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inverter-monitoring"
-version = "0.0.0"
+version = "1.3.0"
 # Runtime dep of webhook/server.py (the only Python entrypoint here).
 dependencies = ["flask>=3.0"]
 
@@ -34,6 +34,7 @@ disable = [
     "W0718",  # Catching general Exception
     "W0613",  # Unused argument
     "W0621",  # Redefined outer name (pytest fixtures are injected as args)
+    "R0913",  # Too many arguments (query-parameter / option-bundle functions)
 ]
 
 [tool.ruff]
