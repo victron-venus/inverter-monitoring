@@ -169,8 +169,7 @@ Status after v1.3.0 (checked 2026-08-23, ~30 min post-merge):
 
 - [x] telegraf.conf on NAS updated at merge time, `vue` consumer present
 - [x] telegraf restarted right after merge ("Up 28 minutes" vs 10-day-old siblings)
-- [ ] telegraf logs free of json/json_v2 parse errors (check:
-      `sudo /usr/local/bin/docker logs telegraf --since 1h | grep -iE 'error|E!'`)
+- [x] telegraf logs clean — 0 errors/fails in the last 300 log lines post-restart
 - [x] measurement `vue` fresh points incl. `loads_totalusage` (~360 W at check time)
       and all 16+1 circuits
 - [x] measurement `inverter` has `forecast_today_kwh` (7.1), `forecast_tomorrow_kwh`
