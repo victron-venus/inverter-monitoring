@@ -97,7 +97,7 @@ flowchart LR
 
 | Topic | Description |
 |-------|-------------|
-| `inverter/state` | Main inverter state (power, SOC, voltages) |
+| `inverter/state` | Main inverter state (power, SOC, voltages) — consumed twice: typed fields into `inverter`, full flattened mirror into `vue` |
 | `battery/+/+` | Battery chain 1 (ESP32 BMS data) |
 | `battery2/+/+` | Battery chain 2 (ESP32 BMS data) |
 | `N/+/solarcharger/+/*` | MPPT charger data from Cerbo |
@@ -106,10 +106,68 @@ flowchart LR
 
 | Measurement | Tags | Fields |
 |-------------|------|--------|
-| `inverter` | host | setpoint, grid_power, solar_total, battery_power, battery_soc, battery_voltage |
+| `inverter` | host | setpoint, grid_power (raw VM-3P75CT), filtered_gt (smoothed), solar_total, pv_total, battery_*, forecast_today_kwh, forecast_tomorrow_kwh, produced_today_kwh, produced_yesterday_kwh, daily per-source kWh |
+| `vue` | host | `loads_<Channel>` for every Emporia Vue circuit (16+1, incl. `loads_Total`) + mirrored scalar state |
 | `battery_chain1` | battery, field | voltage, current, soc, temp |
 | `battery_chain2` | battery, field | voltage, current, soc, temp |
 | `mppt` | portal_id, instance | power, voltage, current |
+
+The `vue` measurement uses the v1 JSON parser's nested-object flattening
+(`loads.Total` → `loads_Total`), so new Vue channels appear automatically
+without config changes.
+
+## Home & Grid Analysis
+
+Dashboard **"Home & Grid Analysis"** (`home-grid.json`, auto-provisioned) shows:
+
+- **Home / Grid / PV / Setpoint** flow — Vue home total vs raw and smoothed grid
+  vs inverter-control setpoint.
+- **Grid Raw vs Smoothed** — the sawtooth check: raw VM-3P75CT readings flip
+  above/below zero every few seconds; the controller's `filtered_gt` should be
+  the flat line near zero.
+- **Home Circuits Breakdown** — all 16+1 Vue channels stacked (excludes Total).
+- **Derived Grid (Home − PV)** — what the controller blends against the CT meter.
+- **Grid σ 1h** — stddev of raw vs smoothed grid; if both are large, tighten
+  smoothing coefficients.
+- **Forecast & production stats** — solar-forecast today/tomorrow kWh,
+  produced today/yesterday kWh.
+
+## Grid Smoothing Tuning Loop
+
+Raw GRID from the VM-3P75CT meter is noisy ("sawtooth" around zero). The
+controller smooths it by blending a Vue-derived value:
+
+```
+effective_gt = w * ema(home_total - pv_total, alpha_d) + (1 - w) * raw_gt
+filtered_gt  = ema(effective_gt, ema_alpha)
+```
+
+To find the coefficients empirically instead of guessing:
+
+```bash
+python3 analysis/grid_correlation.py --hours 24 \
+    --url http://localhost:8086 --token $INFLUX_TOKEN
+# offline sanity check without a live stack:
+python3 analysis/grid_correlation.py --demo
+```
+
+The script computes correlation/lag between raw and derived grid, quantifies
+sawtooth (jitter = first-difference stddev), sweeps candidate coefficients by
+simulating the controller blend offline, and prints a ready-to-paste
+`local_config.py` block for inverter-control:
+
+```python
+ENABLE_GRID_SMOOTHING_WITH_HOME = True
+GRID_SMOOTHING_HOME_WEIGHT = 0.8  # from analysis
+GRID_SMOOTHING_DERIVED_ALPHA = 0.05
+EMA_ALPHA = 0.15
+```
+
+Iterate: apply on Cerbo → watch "Grid Raw vs Smoothed" and "Grid σ 1h" for a
+day → re-run the analyzer → adjust. Target: raw jitter ≫ smoothed jitter and
+near-zero share of `filtered_gt` as high as possible. Weight is capped at 0.95
+in the sweep so the CT meter always keeps some corrective influence (Vue
+calibration drift protection).
 
 ## Embedding in Go Dashboard
 
@@ -173,16 +231,20 @@ Now pushes to main branch will auto-deploy!
 inverter-monitoring/
 ├── docker-compose.yml      # Telegraf + Loki + Webhook stack
 ├── telegraf.conf           # MQTT → InfluxDB config
+├── analysis/
+│   └── grid_correlation.py # Grid smoothing tuning analyzer (stdlib only)
 ├── .env.example            # Environment variables template
 ├── .env                    # Your secrets (gitignored)
 ├── promtail.yml            # Log shipping config (optional)
+├── TODO.md                 # Feature checklist / roadmap
 ├── webhook/                # GitHub webhook auto-deploy
 │   ├── server.py           # Flask webhook listener
 │   ├── Dockerfile          # Container build
 │   └── deploy-local.sh     # Deploy script
 └── grafana/
     └── dashboards/
-        └── inverter-overview.json   # Main dashboard
+        ├── inverter-overview.json  # Main dashboard
+        └── home-grid.json          # Home & Grid Analysis dashboard
 ```
 ## Related Projects
 
