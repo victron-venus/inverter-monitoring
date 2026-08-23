@@ -39,7 +39,7 @@ sawtooth above/below zero).
 ## Phase 3 — Smoothing-tuning analysis loop
 
 - [x] 3.1 Add `analysis/grid_correlation.py` (stdlib only):
-  - pulls `gt`, `filtered_gt`, `loads_Total`, `pv_total`, `setpoint` from
+  - pulls `grid_power`/`gt`, `filtered_gt`, `loads_totalusage`, `pv_total` from
     InfluxDB over a configurable window (HTTP + Flux API);
   - computes Pearson correlation raw-grid ↔ derived-grid, cross-correlation
     lag scan (Vue vs CT meter delay), zero-crossing rate ("sawtooth score"),

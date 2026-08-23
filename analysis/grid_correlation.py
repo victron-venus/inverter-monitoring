@@ -267,15 +267,22 @@ def resample_to(xs: list[float], n: int) -> list[float]:
 
 
 def load_window(args: argparse.Namespace) -> dict[str, list[float]]:
-    fields = {
-        "grid_power": ("inverter", "gt"),
-        "filtered_gt": ("inverter", "filtered_gt"),
-        "home_total": ("vue", "loads_Total"),
-        "pv_total": ("inverter", "pv_total"),
+    # First non-empty candidate wins: the raw CT grid was historically stored as
+    # "gt" and later as "grid_power"; the Vue total channel has appeared under
+    # several CustomName spellings across firmware versions.
+    fields: dict[str, list[tuple[str, str]]] = {
+        "grid_power": [("inverter", "grid_power"), ("inverter", "gt")],
+        "filtered_gt": [("inverter", "filtered_gt")],
+        "home_total": [("vue", "loads_totalusage"), ("vue", "loads_Total")],
+        "pv_total": [("inverter", "pv_total")],
     }
     out: dict[str, list[float]] = {}
-    for key, (meas, field) in fields.items():
-        vals = fetch_field(args.url, args.token, args.org, args.bucket, args.hours, meas, field)
+    for key, candidates in fields.items():
+        vals: list[float] = []
+        for meas, field in candidates:
+            vals = fetch_field(args.url, args.token, args.org, args.bucket, args.hours, meas, field)
+            if vals:
+                break
         print(f"  fetched {key}: {len(vals)} samples")
         out[key] = vals
     return out

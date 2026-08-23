@@ -718,7 +718,7 @@
             "type": "influxdb",
             "uid": "influxdb"
           },
-          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"loads_Total\")\n  |> last()",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field =~ /^loads_total/)\n  |> last()",
           "refId": "A"
         }
       ],
