@@ -211,14 +211,15 @@ def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
     with urllib.request.urlopen(req, timeout=60) as resp:
         body = resp.read()
     rows: list[dict] = []
-    header: list[str] = []
+    header: list[str] | None = None
     for line in body.decode().splitlines():
-        if line.startswith("#") or not line.strip():
+        if not line.strip():
             continue
         parts = line.split(",")
-        if line.startswith(",result,table,_start"):
-            continue
-        if not header:
+        if parts[0].startswith("#"):
+            continue  # datatype/group annotation rows
+        # The header repeats before every table in multi-table results.
+        if header is None or line.startswith(",result,"):
             header = parts
             continue
         row = dict(zip(header, parts))
