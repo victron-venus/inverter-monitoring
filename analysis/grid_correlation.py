@@ -22,7 +22,6 @@ Stdlib only - safe to run on Cerbo GX or any host with python3.
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import math
 import os
@@ -73,7 +72,9 @@ def zero_crossing_rate(xs: list[float]) -> float:
     signs = [1 if x >= 0 else -1 for x in xs]
     if len(signs) < 2:
         return 0.0
-    changes = sum(1 for p, c in itertools.pairwise(signs) if p != c)
+    # zip(s, s[1:]) instead of itertools.pairwise: keeps the script runnable on
+    # the NAS/Cerbo system pythons (3.8) which lack pairwise.
+    changes = sum(1 for p, c in zip(signs, signs[1:]) if p != c)  # noqa: RUF007
     return changes / (len(signs) - 1)
 
 
@@ -85,7 +86,7 @@ def jitter(xs: list[float]) -> float:
     """
     if len(xs) < 2:
         return 0.0
-    return stddev([c - p for p, c in itertools.pairwise(xs)])
+    return stddev([c - p for p, c in zip(xs, xs[1:])])  # noqa: RUF007
 
 
 def best_lag(a: list[float], b: list[float], max_lag: int) -> tuple[int, float]:
