@@ -228,7 +228,7 @@ def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
     return rows
 
 
-def fetch_field(
+def fetch_series(
     url: str,
     token: str,
     org: str,
@@ -236,36 +236,24 @@ def fetch_field(
     hours: int,
     measurement: str,
     field: str,
-) -> list[float]:
+) -> dict[str, float]:
+    """One field averaged into 1-minute buckets, keyed by ISO timestamp."""
     q = (
         f'from(bucket: "{bucket}") '
         f"|> range(start: -{hours}h) "
-        f'|> filter(fn: (r) => r._measurement == "{measurement}" and r._field == "{field}")'
+        f'|> filter(fn: (r) => r._measurement == "{measurement}" and r._field == "{field}") '
+        f"|> aggregateWindow(every: 1m, fn: mean, createEmpty: false)"
     )
-    vals: list[float] = []
+    series: dict[str, float] = {}
     for row in flux_query(url, token, org, q):
-        try:
-            vals.append(float(row["_value"]))
-        except ValueError:
+        t = row.get("_time")
+        if not t:
             continue
-    return vals
-
-
-def resample_to(xs: list[float], n: int) -> list[float]:
-    """Linear-interpolate a series onto n evenly spaced points."""
-    if not xs:
-        return []
-    if len(xs) == 1:
-        return xs * n
-    out: list[float] = []
-    step = (len(xs) - 1) / (n - 1)
-    for i in range(n):
-        pos = i * step
-        lo = int(pos)
-        hi = min(lo + 1, len(xs) - 1)
-        frac = pos - lo
-        out.append(xs[lo] * (1 - frac) + xs[hi] * frac)
-    return out
+        try:
+            series[t] = float(row["_value"])
+        except (KeyError, ValueError):
+            continue
+    return series
 
 
 def load_window(args: argparse.Namespace) -> dict[str, list[float]]:
@@ -278,16 +266,27 @@ def load_window(args: argparse.Namespace) -> dict[str, list[float]]:
         "home_total": [("vue", "loads_totalusage"), ("vue", "loads_Total")],
         "pv_total": [("inverter", "pv_total")],
     }
-    out: dict[str, list[float]] = {}
+    series: dict[str, dict[str, float]] = {}
     for key, candidates in fields.items():
-        vals: list[float] = []
+        data: dict[str, float] = {}
         for meas, field in candidates:
-            vals = fetch_field(args.url, args.token, args.org, args.bucket, args.hours, meas, field)
-            if vals:
+            data = fetch_series(
+                args.url, args.token, args.org, args.bucket, args.hours, meas, field
+            )
+            if data:
                 break
-        print(f"  fetched {key}: {len(vals)} samples")
-        out[key] = vals
-    return out
+        print(f"  fetched {key}: {len(data)} minute buckets")
+        series[key] = data
+
+    # Fields went live at different times (the vue measurement is brand new), so
+    # analyze only timestamps present in every series - position-based zip would
+    # silently compare different hours of the day against each other.
+    common = sorted(set.intersection(*(set(s) for s in series.values())))
+    dropped = {k: len(v) - len(common) for k, v in series.items()}
+    if any(dropped.values()):
+        note = ", ".join(f"{k}: -{v}" for k, v in dropped.items() if v)
+        print(f"  time-intersection: {len(common)} aligned buckets ({note})")
+    return {k: [v[t] for t in common] for k, v in series.items()}
 
 
 # --------------------------------------------------------------------------- #
@@ -334,8 +333,9 @@ def analyze(data: dict[str, list[float]]) -> str:
     if n < 50:
         return "Not enough overlapping samples to analyze (need >= 50)."
 
-    raw_n, der_n = resample_to(raw, n), resample_to(derived, n)
-    filt_n = resample_to(current_filtered, n) if len(current_filtered) >= 50 else []
+    # load_window already time-aligns everything onto shared minute buckets.
+    raw_n, der_n = raw[:n], derived[:n]
+    filt_n = current_filtered[:n] if len(current_filtered) >= 50 else []
 
     lines.append("=== Grid Smoothing Analysis ===")
     lines.append(f"samples analyzed: {n}")
