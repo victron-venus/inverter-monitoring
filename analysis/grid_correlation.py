@@ -22,7 +22,6 @@ Stdlib only - safe to run on Cerbo GX or any host with python3.
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import math
 import os
@@ -73,7 +72,9 @@ def zero_crossing_rate(xs: list[float]) -> float:
     signs = [1 if x >= 0 else -1 for x in xs]
     if len(signs) < 2:
         return 0.0
-    changes = sum(1 for p, c in itertools.pairwise(signs) if p != c)
+    # zip(s, s[1:]) instead of itertools.pairwise: keeps the script runnable on
+    # the NAS/Cerbo system pythons (3.8) which lack pairwise.
+    changes = sum(1 for p, c in zip(signs, signs[1:]) if p != c)  # noqa: RUF007
     return changes / (len(signs) - 1)
 
 
@@ -85,7 +86,7 @@ def jitter(xs: list[float]) -> float:
     """
     if len(xs) < 2:
         return 0.0
-    return stddev([c - p for p, c in itertools.pairwise(xs)])
+    return stddev([c - p for p, c in zip(xs, xs[1:])])  # noqa: RUF007
 
 
 def best_lag(a: list[float], b: list[float], max_lag: int) -> tuple[int, float]:
@@ -210,14 +211,15 @@ def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
     with urllib.request.urlopen(req, timeout=60) as resp:
         body = resp.read()
     rows: list[dict] = []
-    header: list[str] = []
+    header: list[str] | None = None
     for line in body.decode().splitlines():
-        if line.startswith("#") or not line.strip():
+        if not line.strip():
             continue
         parts = line.split(",")
-        if line.startswith(",result,table,_start"):
-            continue
-        if not header:
+        if parts[0].startswith("#"):
+            continue  # datatype/group annotation rows
+        # The header repeats before every table in multi-table results.
+        if header is None or line.startswith(",result,"):
             header = parts
             continue
         row = dict(zip(header, parts))
@@ -226,7 +228,7 @@ def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
     return rows
 
 
-def fetch_field(
+def fetch_series(
     url: str,
     token: str,
     org: str,
@@ -234,51 +236,57 @@ def fetch_field(
     hours: int,
     measurement: str,
     field: str,
-) -> list[float]:
+) -> dict[str, float]:
+    """One field averaged into 1-minute buckets, keyed by ISO timestamp."""
     q = (
         f'from(bucket: "{bucket}") '
         f"|> range(start: -{hours}h) "
-        f'|> filter(fn: (r) => r._measurement == "{measurement}" and r._field == "{field}")'
+        f'|> filter(fn: (r) => r._measurement == "{measurement}" and r._field == "{field}") '
+        f"|> aggregateWindow(every: 1m, fn: mean, createEmpty: false)"
     )
-    vals: list[float] = []
+    series: dict[str, float] = {}
     for row in flux_query(url, token, org, q):
-        try:
-            vals.append(float(row["_value"]))
-        except ValueError:
+        t = row.get("_time")
+        if not t:
             continue
-    return vals
-
-
-def resample_to(xs: list[float], n: int) -> list[float]:
-    """Linear-interpolate a series onto n evenly spaced points."""
-    if not xs:
-        return []
-    if len(xs) == 1:
-        return xs * n
-    out: list[float] = []
-    step = (len(xs) - 1) / (n - 1)
-    for i in range(n):
-        pos = i * step
-        lo = int(pos)
-        hi = min(lo + 1, len(xs) - 1)
-        frac = pos - lo
-        out.append(xs[lo] * (1 - frac) + xs[hi] * frac)
-    return out
+        try:
+            series[t] = float(row["_value"])
+        except (KeyError, ValueError):
+            continue
+    return series
 
 
 def load_window(args: argparse.Namespace) -> dict[str, list[float]]:
-    fields = {
-        "grid_power": ("inverter", "gt"),
-        "filtered_gt": ("inverter", "filtered_gt"),
-        "home_total": ("vue", "loads_Total"),
-        "pv_total": ("inverter", "pv_total"),
+    # First non-empty candidate wins: the raw CT grid was historically stored as
+    # "gt" and later as "grid_power"; the Vue total channel has appeared under
+    # several CustomName spellings across firmware versions.
+    fields: dict[str, list[tuple[str, str]]] = {
+        "grid_power": [("inverter", "grid_power"), ("inverter", "gt")],
+        "filtered_gt": [("inverter", "filtered_gt")],
+        "home_total": [("vue", "loads_totalusage"), ("vue", "loads_Total")],
+        "pv_total": [("inverter", "pv_total")],
     }
-    out: dict[str, list[float]] = {}
-    for key, (meas, field) in fields.items():
-        vals = fetch_field(args.url, args.token, args.org, args.bucket, args.hours, meas, field)
-        print(f"  fetched {key}: {len(vals)} samples")
-        out[key] = vals
-    return out
+    series: dict[str, dict[str, float]] = {}
+    for key, candidates in fields.items():
+        data: dict[str, float] = {}
+        for meas, field in candidates:
+            data = fetch_series(
+                args.url, args.token, args.org, args.bucket, args.hours, meas, field
+            )
+            if data:
+                break
+        print(f"  fetched {key}: {len(data)} minute buckets")
+        series[key] = data
+
+    # Fields went live at different times (the vue measurement is brand new), so
+    # analyze only timestamps present in every series - position-based zip would
+    # silently compare different hours of the day against each other.
+    common = sorted(set.intersection(*(set(s) for s in series.values())))
+    dropped = {k: len(v) - len(common) for k, v in series.items()}
+    if any(dropped.values()):
+        note = ", ".join(f"{k}: -{v}" for k, v in dropped.items() if v)
+        print(f"  time-intersection: {len(common)} aligned buckets ({note})")
+    return {k: [v[t] for t in common] for k, v in series.items()}
 
 
 # --------------------------------------------------------------------------- #
@@ -325,8 +333,9 @@ def analyze(data: dict[str, list[float]]) -> str:
     if n < 50:
         return "Not enough overlapping samples to analyze (need >= 50)."
 
-    raw_n, der_n = resample_to(raw, n), resample_to(derived, n)
-    filt_n = resample_to(current_filtered, n) if len(current_filtered) >= 50 else []
+    # load_window already time-aligns everything onto shared minute buckets.
+    raw_n, der_n = raw[:n], derived[:n]
+    filt_n = current_filtered[:n] if len(current_filtered) >= 50 else []
 
     lines.append("=== Grid Smoothing Analysis ===")
     lines.append(f"samples analyzed: {n}")

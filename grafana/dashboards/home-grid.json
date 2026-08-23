@@ -52,7 +52,7 @@
       "targets": [
         {
           "datasource": { "type": "influxdb", "uid": "influxdb" },
-          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"loads_Total\")\n  |> last()",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field =~ /^loads_total/)\n  |> last()",
           "refId": "A"
         }
       ],
@@ -315,7 +315,7 @@
       "targets": [
         {
           "datasource": { "type": "influxdb", "uid": "influxdb" },
-          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"loads_Total\" or r._measurement == \"inverter\" and (r._field == \"grid_power\" or r._field == \"filtered_gt\" or r._field == \"pv_total\" or r._field == \"setpoint\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field =~ /^loads_total/ or r._measurement == \"inverter\" and (r._field == \"grid_power\" or r._field == \"filtered_gt\" or r._field == \"pv_total\" or r._field == \"setpoint\"))\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -430,7 +430,7 @@
       "targets": [
         {
           "datasource": { "type": "influxdb", "uid": "influxdb" },
-          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field =~ /^loads_/ and r._field != \"loads_Total\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+          "query": "from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field =~ /^loads_/ and r._field !~ /^loads_total/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
           "refId": "A"
         }
       ],
@@ -482,7 +482,7 @@
       "targets": [
         {
           "datasource": { "type": "influxdb", "uid": "influxdb" },
-          "query": "home = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"loads_Total\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ _time: r._time, home_w: r._value }))\npv = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ _time: r._time, pv_w: r._value }))\njoin(tables: {h: home, p: pv}, on: [\"_time\"])\n  |> map(fn: (r) => ({ _time: r._time, _field: \"derived_grid\", _value: r.home_w - r.pv_w }))",
+          "query": "home = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field =~ /^loads_total/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ _time: r._time, home_w: r._value }))\npv = from(bucket: \"inverter\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"inverter\" and r._field == \"pv_total\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> map(fn: (r) => ({ _time: r._time, pv_w: r._value }))\njoin(tables: {h: home, p: pv}, on: [\"_time\"])\n  |> map(fn: (r) => ({ _time: r._time, _field: \"derived_grid\", _value: r.home_w - r.pv_w }))",
           "refId": "A"
         }
       ],

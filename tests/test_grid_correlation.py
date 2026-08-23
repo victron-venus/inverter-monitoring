@@ -93,3 +93,33 @@ def test_simulate_blend_weight_zero_returns_filtered_raw():
     xs = list(range(100))
     out = simulate_blend(xs, xs, weight=0.0, derived_alpha=0.1, ema_alpha=1.0)
     assert out == xs  # no blend, no EMA smoothing
+
+
+def test_flux_query_parses_csv_with_annotations_and_multiple_tables(monkeypatch):
+    from analysis import grid_correlation as gc  # pylint: disable=import-outside-toplevel
+
+    csv_body = (
+        "#datatype,string,long,dateTime:RFC3339,double,string\r\n"
+        ",result,table,_time,_value,_field\r\n"
+        ",_result,0,2026-08-23T10:00:00Z,4,grid_power\r\n"
+        "\r\n"
+        "#datatype,string,long,dateTime:RFC3339,double,string\r\n"
+        ",result,table,_time,_value,_field\r\n"
+        ",_result,0,2026-08-23T10:00:10Z,7,pv_total\r\n"
+        ",_result,1,2026-08-23T10:00:20Z,9,pv_total\r\n"
+    )
+
+    class FakeResp:  # pylint: disable=missing-class-docstring
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return csv_body.encode()
+
+    monkeypatch.setattr(gc.urllib.request, "urlopen", lambda req, timeout: FakeResp())
+    rows = gc.flux_query("http://localhost:8086", "t", "home", 'from(bucket: "inverter")')
+    assert [r["_value"] for r in rows] == ["4", "7", "9"]
+    assert [r["_field"] for r in rows] == ["grid_power", "pv_total", "pv_total"]

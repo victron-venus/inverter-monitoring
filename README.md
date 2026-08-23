@@ -107,13 +107,14 @@ flowchart LR
 | Measurement | Tags | Fields |
 |-------------|------|--------|
 | `inverter` | host | setpoint, grid_power (raw VM-3P75CT), filtered_gt (smoothed), solar_total, pv_total, battery_*, forecast_today_kwh, forecast_tomorrow_kwh, produced_today_kwh, produced_yesterday_kwh, daily per-source kWh |
-| `vue` | host | `loads_<Channel>` for every Emporia Vue circuit (16+1, incl. `loads_Total`) + mirrored scalar state |
+| `vue` | host | `loads_<Channel>` for every Emporia Vue circuit (16+1, total circuit stored as `loads_totalusage`) + mirrored scalar state |
 | `battery_chain1` | battery, field | voltage, current, soc, temp |
 | `battery_chain2` | battery, field | voltage, current, soc, temp |
 | `mppt` | portal_id, instance | power, voltage, current |
 
 The `vue` measurement uses the v1 JSON parser's nested-object flattening
-(`loads.Total` → `loads_Total`), so new Vue channels appear automatically
+(`loads.Total` → `loads_Total`), so new Vue channels appear automatically;
+the whole-home total matches `/^loads_total/` (currently `loads_totalusage`)
 without config changes.
 
 ## Home & Grid Analysis
