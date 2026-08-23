@@ -2,8 +2,6 @@
 
 [![CI](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/network/members)
 [![GitHub last commit](https://img.shields.io/github/last-commit/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/commits/main)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/victron-venus/inverter-monitoring/graphs/commit-activity)
 
