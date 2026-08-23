@@ -146,7 +146,7 @@ To find the coefficients empirically instead of guessing:
 
 ```bash
 python3 analysis/grid_correlation.py --hours 24 \
-    --url http://localhost:8086 --token $INFLUX_TOKEN --json-out rec.json
+    --url http://localhost:8086 --token $INFLUX_TOKEN
 # offline sanity check without a live stack:
 python3 analysis/grid_correlation.py --demo
 ```
@@ -158,7 +158,7 @@ simulating the controller blend offline, and prints a ready-to-paste
 
 ```python
 ENABLE_GRID_SMOOTHING_WITH_HOME = True
-GRID_SMOOTHING_HOME_WEIGHT = 0.8   # from analysis
+GRID_SMOOTHING_HOME_WEIGHT = 0.8  # from analysis
 GRID_SMOOTHING_DERIVED_ALPHA = 0.05
 EMA_ALPHA = 0.15
 ```

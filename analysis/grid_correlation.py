@@ -28,6 +28,7 @@ import math
 import os
 import random
 import sys
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 
@@ -192,6 +193,9 @@ def sweep(
 
 def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
     """Run one Flux query, return parsed CSV rows as dicts."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError(f"invalid InfluxDB URL (expected http/https): {url!r}")
     req = urllib.request.Request(
         f"{url.rstrip('/')}/api/v2/query?org={org}",
         data=json.dumps({"query": query, "dialect": {"annotations": ["datatype"]}}).encode(),
@@ -395,7 +399,6 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--bucket", default="inverter")
     ap.add_argument("--hours", type=int, default=24, help="Analysis window in hours")
     ap.add_argument("--demo", action="store_true", help="Use synthetic data instead of InfluxDB")
-    ap.add_argument("--json-out", default=None, help="Also write metrics + winner as JSON")
     args = ap.parse_args(argv)
 
     if args.demo:
@@ -409,31 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Fetching {args.hours}h from {args.url} (org={args.org}, bucket={args.bucket})...")
         data = load_window(args)
 
-    report = analyze(data)
-    print(report)
-
-    if args.json_out:
-        raw = data["grid_power"]
-        derived = [h - p for h, p in zip(data["home_total"], data["pv_total"])]
-        n = min(len(raw), len(derived))
-        raw_n, der_n = resample_to(raw, n), resample_to(derived, n)
-        top = sweep(raw_n, der_n, top_n=1)[0]
-        payload = {
-            "samples": n,
-            "raw_sigma_w": round(stddev(raw_n), 1),
-            "raw_near_zero_pct": round(near_zero_pct(raw_n), 1),
-            "corr_raw_derived": round(pearson(raw_n, der_n), 3),
-            "recommended": {
-                "ENABLE_GRID_SMOOTHING_WITH_HOME": True,
-                "GRID_SMOOTHING_HOME_WEIGHT": top.weight,
-                "GRID_SMOOTHING_DERIVED_ALPHA": top.derived_alpha,
-                "EMA_ALPHA": top.ema_alpha,
-                "expected_near_zero_pct": round(top.near_zero, 1),
-            },
-        }
-        with open(args.json_out, "w", encoding="utf-8") as fh:
-            json.dump(payload, fh, indent=2)
-        print(f"wrote {args.json_out}")
+    print(analyze(data))
     return 0
 
 
