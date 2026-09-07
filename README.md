@@ -230,34 +230,14 @@ org_name = home
 org_role = Viewer
 ```
 
-## Auto-Deploy via GitHub Webhook (Optional)
+## Auto-Deploy
 
-If you have Cloudflare Argo tunnel to your Synology, you can enable auto-deploy:
+Deploy webhooks (GitHub/GitLab → Synology/Cerbo/k3s) live in a separate Portainer
+stack: [`4alvit/github-deploy-webhook`](https://github.com/4alvit/github-deploy-webhook)
+(host port `9001`). This repo no longer ships the webhook service.
 
-### 1. Generate webhook secret
-```bash
-openssl rand -hex 32
-# Add to .env as WEBHOOK_SECRET
-```
-
-### 2. Start webhook service
-```bash
-docker-compose --profile webhook up -d
-```
-
-### 3. Configure Argo tunnel
-Add route in Cloudflare dashboard:
-- Public hostname: `deploy.yourdomain.com`
-- Service: `http://localhost:9000`
-
-### 4. Configure GitHub webhook
-1. Go to repo Settings → Webhooks → Add webhook
-2. Payload URL: `https://deploy.yourdomain.com/webhook`
-3. Content type: `application/json`
-4. Secret: your WEBHOOK_SECRET
-5. Events: Just the push event
-
-Now pushes to main branch will auto-deploy!
+Pushes to `main` here still trigger config sync (telegraf/promtail/grafana) via
+that external webhook.
 
 ## Documentation
 
@@ -267,7 +247,7 @@ Now pushes to main branch will auto-deploy!
 
 ```
 inverter-monitoring/
-├── docker-compose.yml      # Telegraf + Loki + Webhook stack
+├── docker-compose.yml      # Telegraf + Loki + Grafana stack
 ├── telegraf.conf           # MQTT → InfluxDB config
 ├── analysis/
 │   └── grid_correlation.py # Grid smoothing tuning analyzer (stdlib only)
@@ -275,10 +255,6 @@ inverter-monitoring/
 ├── .env                    # Your secrets (gitignored)
 ├── promtail.yml            # Log shipping config (optional)
 ├── TODO.md                 # Feature checklist / roadmap
-├── webhook/                # GitHub webhook auto-deploy
-│   ├── server.py           # Flask webhook listener
-│   ├── Dockerfile          # Container build
-│   └── deploy-local.sh     # Deploy script
 └── grafana/
     └── dashboards/
         ├── inverter-overview.json  # Main dashboard
