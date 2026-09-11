@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import hmac
+import logging
 import subprocess
 from types import SimpleNamespace
 
@@ -228,6 +229,27 @@ def test_webhook_ignores_unknown_event(client, no_secret):
     resp = client.post("/webhook", json={}, headers={"X-GitHub-Event": "ping"})
     assert resp.status_code == 200
     assert resp.get_json()["status"] == "ignored"
+
+
+@pytest.mark.parametrize(
+    "event",
+    ["ping\nFORGED", "ping\rFORGED", "ping\x1b[2JFORGED", "ping\u2028FORGED"],
+)
+def test_unknown_event_control_characters_never_reach_logs(client, no_secret, caplog, event):
+    """Untrusted WSGI header values cannot add content to application log records."""
+    with caplog.at_level(logging.INFO, logger=server.logger.name):
+        response = client.post(
+            "/webhook", json={}, environ_overrides={"HTTP_X_GITHUB_EVENT": event}
+        )
+
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "ignored", "event": server.sanitize_for_logging(event)}
+    messages = [
+        record.getMessage() for record in caplog.records if record.name == server.logger.name
+    ]
+    assert "Ignoring unsupported GitHub event" in messages
+    assert all(event not in message for message in messages)
+    assert all(server.sanitize_for_logging(event) not in message for message in messages)
 
 
 def release_payload(action="published", tag="v1.0.0", repo="inverter-control"):
