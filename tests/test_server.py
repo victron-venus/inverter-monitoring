@@ -4,8 +4,10 @@ import base64
 import hashlib
 import hmac
 import logging
+import secrets
 import subprocess
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -20,8 +22,21 @@ def client():
 
 
 @pytest.fixture()
-def no_secret(monkeypatch):
-    monkeypatch.setattr(server, "WEBHOOK_SECRET", "")
+def signed_requests(client, monkeypatch):
+    """Sign functional-test deliveries using the exact JSON bytes sent to Flask."""
+    secret = secrets.token_hex(32)
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", secret)
+    original_post = client.post
+
+    def signed_post(path, *, json, headers=None, **kwargs):
+        payload = server.app.json.dumps(json).encode("utf-8")
+        request_headers = dict(headers or {})
+        request_headers["X-Hub-Signature-256"] = signed(payload, secret)
+        return original_post(
+            path, data=payload, content_type="application/json", headers=request_headers, **kwargs
+        )
+
+    monkeypatch.setattr(client, "post", signed_post)
 
 
 # ---------------------------------------------------------------- sanitize_for_logging
@@ -54,9 +69,9 @@ def signed(payload: bytes, secret: str) -> str:
     return "sha256=" + digest
 
 
-def test_verify_skips_when_no_secret(monkeypatch):
+def test_verify_rejects_when_no_secret(monkeypatch):
     monkeypatch.setattr(server, "WEBHOOK_SECRET", "")
-    assert server.verify_signature(PAYLOAD, "") is True
+    assert server.verify_signature(PAYLOAD, "") is False
 
 
 def test_verify_rejects_missing_signature(monkeypatch):
@@ -182,7 +197,7 @@ def push_payload(branch="main", repo="inverter-monitoring"):
     }
 
 
-def test_push_to_main_runs_deploy(client, no_secret, monkeypatch):
+def test_push_to_main_runs_deploy(client, signed_requests, monkeypatch):
     monkeypatch.setattr(
         server.subprocess, "run", lambda *a, **k: fake_completed(stdout="", stderr="")
     )
@@ -191,7 +206,7 @@ def test_push_to_main_runs_deploy(client, no_secret, monkeypatch):
     assert resp.get_json() == {"status": "deployed"}
 
 
-def test_push_deploy_failure(client, no_secret, monkeypatch):
+def test_push_deploy_failure(client, signed_requests, monkeypatch):
     monkeypatch.setattr(
         server.subprocess, "run", lambda *a, **k: fake_completed(returncode=1, stderr="boom")
     )
@@ -200,7 +215,7 @@ def test_push_deploy_failure(client, no_secret, monkeypatch):
     assert resp.get_json()["status"] == "failed"
 
 
-def test_push_deploy_timeout(client, no_secret, monkeypatch):
+def test_push_deploy_timeout(client, signed_requests, monkeypatch):
     def raise_timeout(*a, **k):
         raise subprocess.TimeoutExpired(cmd="deploy", timeout=300)
 
@@ -219,13 +234,61 @@ def test_health_ok(client):
     assert resp.get_json() == {"status": "ok"}
 
 
+@pytest.mark.parametrize("event", ["push", "release"])
+def test_missing_secret_rejects_delivery_before_dispatch(client, monkeypatch, event):
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", "")
+    handler = Mock()
+    monkeypatch.setattr(server, f"handle_{event}_event", handler)
+
+    response = client.post("/webhook", json={}, headers={"X-GitHub-Event": event})
+
+    assert response.status_code == 503
+    assert response.get_json() == {"error": "Webhook secret is not configured"}
+    handler.assert_not_called()
+    assert client.get("/health").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "signature", ["", "sha256=" + "0" * 64, "sha256=not-a-digest", "sha256=" + "\u00e9" * 64]
+)
+@pytest.mark.parametrize("event", ["push", "release"])
+def test_invalid_signature_rejects_delivery_before_dispatch(client, monkeypatch, event, signature):
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", secrets.token_hex(32))
+    handler = Mock()
+    monkeypatch.setattr(server, f"handle_{event}_event", handler)
+
+    response = client.post(
+        "/webhook",
+        json={},
+        headers={"X-GitHub-Event": event, "X-Hub-Signature-256": signature},
+    )
+
+    assert response.status_code == 401
+    handler.assert_not_called()
+
+
+def test_body_changed_after_signing_rejects_delivery(client, monkeypatch):
+    secret = secrets.token_hex(32)
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", secret)
+    handler = Mock()
+    monkeypatch.setattr(server, "handle_release_event", handler)
+    response = client.post(
+        "/webhook",
+        data=PAYLOAD + b" ",
+        content_type="application/json",
+        headers={"X-GitHub-Event": "release", "X-Hub-Signature-256": signed(PAYLOAD, secret)},
+    )
+    assert response.status_code == 401
+    handler.assert_not_called()
+
+
 def test_webhook_rejects_bad_signature(client, monkeypatch):
     monkeypatch.setattr(server, "WEBHOOK_SECRET", "s3cret")
     resp = client.post("/webhook", data=PAYLOAD, headers={"X-GitHub-Event": "push"})
     assert resp.status_code == 401
 
 
-def test_webhook_ignores_unknown_event(client, no_secret):
+def test_webhook_ignores_unknown_event(client, signed_requests):
     resp = client.post("/webhook", json={}, headers={"X-GitHub-Event": "ping"})
     assert resp.status_code == 200
     assert resp.get_json()["status"] == "ignored"
@@ -235,7 +298,7 @@ def test_webhook_ignores_unknown_event(client, no_secret):
     "event",
     ["ping\nFORGED", "ping\rFORGED", "ping\x1b[2JFORGED", "ping\u2028FORGED"],
 )
-def test_unknown_event_control_characters_never_reach_logs(client, no_secret, caplog, event):
+def test_unknown_event_control_characters_never_reach_logs(client, signed_requests, caplog, event):
     """Untrusted WSGI header values cannot add content to application log records."""
     with caplog.at_level(logging.INFO, logger=server.logger.name):
         response = client.post(
@@ -260,20 +323,20 @@ def release_payload(action="published", tag="v1.0.0", repo="inverter-control"):
     }
 
 
-def test_release_unpublished_action_ignored(client, no_secret):
+def test_release_unpublished_action_ignored(client, signed_requests):
     resp = client.post(
         "/webhook", json=release_payload(action="created"), headers={"X-GitHub-Event": "release"}
     )
     assert resp.get_json()["status"] == "ignored"
 
 
-def test_release_without_tag_ignored(client, no_secret):
+def test_release_without_tag_ignored(client, signed_requests):
     payload = release_payload(tag="")
     resp = client.post("/webhook", json=payload, headers={"X-GitHub-Event": "release"})
     assert resp.get_json()["reason"] == "no tag"
 
 
-def test_release_unknown_repo_ignored(client, no_secret):
+def test_release_unknown_repo_ignored(client, signed_requests):
     resp = client.post(
         "/webhook",
         json=release_payload(repo="some-other-repo"),
@@ -282,7 +345,7 @@ def test_release_unknown_repo_ignored(client, no_secret):
     assert resp.get_json()["status"] == "ignored"
 
 
-def test_release_updates_inverter_control(client, no_secret, monkeypatch):
+def test_release_updates_inverter_control(client, signed_requests, monkeypatch):
     seen = {}
 
     def fake_update(tag):
@@ -297,7 +360,7 @@ def test_release_updates_inverter_control(client, no_secret, monkeypatch):
     assert body["results"]["inverter-control"]["success"] is True
 
 
-def test_release_updates_dashboard(client, no_secret, monkeypatch):
+def test_release_updates_dashboard(client, signed_requests, monkeypatch):
     monkeypatch.setattr(server, "update_inverter_dashboard", lambda tag: (False, "nope"))
     resp = client.post(
         "/webhook",
@@ -309,14 +372,14 @@ def test_release_updates_dashboard(client, no_secret, monkeypatch):
     assert body["results"]["inverter-dashboard"]["success"] is False
 
 
-def test_push_other_branch_ignored(client, no_secret):
+def test_push_other_branch_ignored(client, signed_requests):
     resp = client.post(
         "/webhook", json=push_payload(branch="feature"), headers={"X-GitHub-Event": "push"}
     )
     assert resp.get_json()["branch"] == "feature"
 
 
-def test_push_wrong_repo_ignored(client, no_secret):
+def test_push_wrong_repo_ignored(client, signed_requests):
     resp = client.post(
         "/webhook", json=push_payload(repo="elsewhere"), headers={"X-GitHub-Event": "push"}
     )
