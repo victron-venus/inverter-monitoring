@@ -7,14 +7,13 @@ on:
 
 permissions:
   contents: write
-  discussions: write
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+      uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
       with:
         egress-policy: audit
 
@@ -23,20 +22,22 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Extract tag
-      id: tag
-      run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+    - name: Validate release metadata
+      env:
+        TAG: ${{ github.ref_name }}
+      run: |
+        test "$TAG" = "$(tr -d '\r\n' < version)"
+        test -s release.txt
+        test "$(head -n 1 release.txt)" = "Inverter Monitoring $TAG"
 
     - name: Create or update GitHub Release
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TAG: ${{ steps.tag.outputs.TAG }}
+        TAG: ${{ github.ref_name }}
       run: |
-        NOTES=$(printf 'Automated release %s\n\n## Assets\n- Binary artifacts built by CI/CD\n- Source code (auto-attached)' "$TAG")
-        # Idempotent: re-pushing a tag (or a manually created release) must
-        # not fail the pipeline with "already_exists" - update notes instead.
+        # Re-running the workflow preserves the reviewed notes for this tag.
         if gh release view "$TAG" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-          gh release edit "$TAG" --title "$TAG" --notes "$NOTES" -R "$GITHUB_REPOSITORY"
+          gh release edit "$TAG" --title "$TAG" --notes-file release.txt -R "$GITHUB_REPOSITORY"
         else
-          gh release create "$TAG" --title "$TAG" --notes "$NOTES" -R "$GITHUB_REPOSITORY"
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file release.txt -R "$GITHUB_REPOSITORY"
         fi

@@ -1,30 +1,29 @@
-Inverter Monitoring v1.2.0
-===========================
+Inverter Monitoring v1.3.2
+=========================
 
-🔧 Telegraf Configuration Overhaul (fixes NaN values)
-- Explicit field type definitions for all MQTT JSON fields → Telegraf now enforces float type, silently drops NaN instead of emitting it
-- Added explicit field definitions for: setpoint, battery_power, battery_voltage, battery_current, battery_soc, mppt_total, pv_power, pv_voltage, pv_current, pv_total, ev_power, ev_voltage, ev_current, car_soc, water_level, uptime
-- Added individual MPPT fields (mppt_0_power, mppt_1_power, mppt_2_power) and Tasmota fields (tasmota_0_power, tasmota_1_power)
-- Added daily energy stats fields (mppt_daily, tasmota_daily)
-- Added tag_keys for battery chains to reduce cardinality
+Security and reliability
+------------------------
 
-⚡ Performance Optimizations
-- Increased collection interval: 5s → 10s (reduces CPU ~50%)
-- Added collection_jitter: 1s to spread load
-- flush_interval: 10s (matches interval)
-- Added fielddrop for high-cardinality fields (CPU time_*, network protocol counters)
+- The deployment webhook requires a configured WEBHOOK_SECRET and a valid
+  X-Hub-Signature-256 signature for the exact request body. Unsigned deliveries
+  are rejected before any deployment action; /health remains available.
+- Webhook logs no longer include untrusted X-GitHub-Event header values.
+- The grid smoothing analyzer accepts direct HTTP/HTTPS InfluxDB endpoints and
+  rejects redirects to prevent forwarding the authorization token.
 
-📊 New Metrics Added
-- MPPT individual consumer: mppt/+/state with power, voltage, current per tracker
-- Battery chains now aggregated with topic tags (reduces cardinality)
-- System monitoring: CPU, memory, disk, network (low overhead)
-- Docker monitoring: container resource usage (optional)
+Upgrade notes
+-------------
 
-🔧 Telegraf Agent Tuning
-- metric_batch_size: 1000, metric_buffer_limit: 10000
-- precision: 0s (nanosecond precision)
-- hostname: cerbo
+Configure the same secret in the webhook service environment and GitHub webhook
+settings before restarting an existing service. Missing server configuration
+returns HTTP 503; a missing or invalid signature returns HTTP 401.
 
-📦 Deployment
-- telegraf.conf deployed to /data/telegraf/telegraf.conf on Cerbo
-- Restart telegraf container to apply: `docker restart telegraf` or `svc -t /service/telegraf`
+If the analyzer previously relied on an HTTP redirect, configure the final
+InfluxDB endpoint directly. The release contains configuration files and Python
+source; it does not provide a compiled binary or deploy the monitoring stack.
+
+Validation
+----------
+
+The current source passes 60 offline tests, Ruff, MyPy, Bandit medium/high
+security checks, dependency auditing, CodeQL, and Sonar analysis.
