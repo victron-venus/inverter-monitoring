@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "repository": "victron-venus/inverter-monitoring",
+  "mode": "release",
+  "default_branch": "main",
+  "validation_workflows": [
+    "ci.yml",
+    "codeql.yml",
+    "release-security.yml"
+  ],
+  "artifact_pattern": "release-assets*",
+  "version_file": "version",
+  "local_checks": [
+    "bash scripts/ci.sh",
+    "bash scripts/ci.sh security"
+  ],
+  "notes": [],
+  "container_assets": {
+    "inverter-monitoring-container.oci.tar": "ghcr.io/victron-venus/inverter-monitoring"
+  }
+}

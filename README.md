@@ -233,9 +233,29 @@ org_name = home
 org_role = Viewer
 ```
 
-## Auto-Deploy via GitHub Webhook (Optional)
+## Release webhook and manual deployment
 
-If you have Cloudflare Argo tunnel to your Synology, you can enable auto-deploy:
+Automatic deployment is disabled by default. Set
+`AUTO_DEPLOY_STABLE_RELEASES=false` in the service environment; Compose supplies
+this value when it is omitted. Pushes to main, tag pushes and successful CI runs
+never update configuration or restart containers.
+
+Validate and package candidates with `python3 scripts/release.py check` and
+`python3 scripts/release.py package`. Promote an approved RC using
+`python3 scripts/release.py stable --rc vX.Y.Z-rc.N`, complete registry promotion
+where applicable, then review and run the existing deployment script or approved
+infrastructure plan explicitly. The legacy `run_deploy_script` and update helpers
+remain available for those operator tools.
+
+A compatibility opt-in exists for a controlled rollout: after the chosen stable
+release's artifacts/images are published and verified, start the listener with
+`AUTO_DEPLOY_STABLE_RELEASES=true` and redeliver its published GitHub release.
+Only exact `vX.Y.Z` tags with explicit `prerelease: false`, `draft: false`, and
+action `published` can reach an update helper. Restore the switch to `false`
+afterwards. This listener does not verify registry readiness, so leave the switch
+off during normal release publication to avoid racing registry promotion.
+
+The following configures authenticated delivery; it does not enable deployment:
 
 ### 1. Generate webhook secret
 ```bash
@@ -270,9 +290,9 @@ Add route in Cloudflare dashboard:
 2. Payload URL: `https://deploy.yourdomain.com/webhook`
 3. Content type: `application/json`
 4. Secret: your WEBHOOK_SECRET
-5. Events: Just the push event
+5. Events: Releases only; pushes and CI completion events cannot deploy.
 
-Now pushes to main branch will auto-deploy!
+Deliveries remain `ignored` unless the controlled stable-release opt-in above is enabled.
 
 ## Documentation
 
@@ -290,7 +310,7 @@ inverter-monitoring/
 ├── .env                    # Your secrets (gitignored)
 ├── promtail.yml            # Log shipping config (optional)
 ├── TODO.md                 # Feature checklist / roadmap
-├── webhook/                # GitHub webhook auto-deploy
+├── webhook/                # Authenticated release listener (manual deployment default)
 │   ├── server.py           # Flask webhook listener
 │   ├── Dockerfile          # Container build
 │   └── deploy-local.sh     # Deploy script

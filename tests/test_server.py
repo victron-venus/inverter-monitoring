@@ -197,31 +197,33 @@ def push_payload(branch="main", repo="inverter-monitoring"):
     }
 
 
-def test_push_to_main_runs_deploy(client, signed_requests, monkeypatch):
-    monkeypatch.setattr(
-        server.subprocess, "run", lambda *a, **k: fake_completed(stdout="", stderr="")
-    )
+def test_push_to_main_never_runs_deploy(client, signed_requests, monkeypatch):
+    deploy = Mock(side_effect=AssertionError("Push must not execute a deployment"))
+    monkeypatch.setattr(server.subprocess, "run", deploy)
     resp = client.post("/webhook", json=push_payload(), headers={"X-GitHub-Event": "push"})
     assert resp.status_code == 200
-    assert resp.get_json() == {"status": "deployed"}
+    assert resp.get_json()["status"] == "ignored"
+    deploy.assert_not_called()
 
 
-def test_push_deploy_failure(client, signed_requests, monkeypatch):
+def test_explicit_deploy_failure(client, signed_requests, monkeypatch):
     monkeypatch.setattr(
         server.subprocess, "run", lambda *a, **k: fake_completed(returncode=1, stderr="boom")
     )
-    resp = client.post("/webhook", json=push_payload(), headers={"X-GitHub-Event": "push"})
-    assert resp.status_code == 500
+    with server.app.app_context():
+        resp, status = server.run_deploy_script()
+    assert status == 500
     assert resp.get_json()["status"] == "failed"
 
 
-def test_push_deploy_timeout(client, signed_requests, monkeypatch):
+def test_explicit_deploy_timeout(client, signed_requests, monkeypatch):
     def raise_timeout(*a, **k):
         raise subprocess.TimeoutExpired(cmd="deploy", timeout=300)
 
     monkeypatch.setattr(server.subprocess, "run", raise_timeout)
-    resp = client.post("/webhook", json=push_payload(), headers={"X-GitHub-Event": "push"})
-    assert resp.status_code == 500
+    with server.app.app_context():
+        resp, status = server.run_deploy_script()
+    assert status == 500
     assert resp.get_json() == {"status": "timeout"}
 
 
@@ -318,7 +320,7 @@ def test_unknown_event_control_characters_never_reach_logs(client, signed_reques
 def release_payload(action="published", tag="v1.0.0", repo="inverter-control"):
     return {
         "action": action,
-        "release": {"tag_name": tag},
+        "release": {"tag_name": tag, "prerelease": False, "draft": False},
         "repository": {"name": repo},
     }
 
@@ -346,6 +348,7 @@ def test_release_unknown_repo_ignored(client, signed_requests):
 
 
 def test_release_updates_inverter_control(client, signed_requests, monkeypatch):
+    monkeypatch.setattr(server, "AUTO_DEPLOY_STABLE_RELEASES", True)
     seen = {}
 
     def fake_update(tag):
@@ -361,6 +364,7 @@ def test_release_updates_inverter_control(client, signed_requests, monkeypatch):
 
 
 def test_release_updates_dashboard(client, signed_requests, monkeypatch):
+    monkeypatch.setattr(server, "AUTO_DEPLOY_STABLE_RELEASES", True)
     monkeypatch.setattr(server, "update_inverter_dashboard", lambda tag: (False, "nope"))
     resp = client.post(
         "/webhook",
