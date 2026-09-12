@@ -17,5 +17,6 @@
   "notes": [],
   "container_assets": {
     "inverter-monitoring-container.oci.tar": "ghcr.io/victron-venus/inverter-monitoring"
-  }
+  },
+  "visibility": "public"
 }
