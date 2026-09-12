@@ -15,3 +15,12 @@ __pycache__/
 .coverage
 PR*.txt
 *.backup
+
+# Local CI/release artifacts
+release-dist/
+.release-download/
+.release-assets/
+.release-evidence/
+
+# Local CI coverage output
+coverage.xml

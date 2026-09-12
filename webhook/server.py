@@ -3,8 +3,8 @@
 GitHub Webhook Listener for Auto-Deploy
 
 Handles:
-- push events: update telegraf/promtail configs
-- release events: update inverter-control and inverter-dashboard
+- authenticated deliveries are ignored for automatic deployment by default
+- opt-in published stable releases can update inverter-control and inverter-dashboard
 
 Run with: python server.py
 Or as Docker container alongside other services.
@@ -27,7 +27,11 @@ logger = logging.getLogger(__name__)
 # Configuration
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
 DEPLOY_SCRIPT = os.environ.get("DEPLOY_SCRIPT", "/app/deploy-local.sh")
-ALLOWED_BRANCHES = ["main", "master"]
+# Disabled by default: registry publication and deployment are separate operator steps.
+AUTO_DEPLOY_STABLE_RELEASES = (
+    os.environ.get("AUTO_DEPLOY_STABLE_RELEASES", "false").lower() == "true"
+)
+STABLE_TAG_PATTERN = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 
 # SSH config for Cerbo (mounted from host or configured in container)
 CERBO_HOST = os.environ.get("CERBO_HOST", "Cerbo")
@@ -219,17 +223,31 @@ def sanitize_for_logging(value: str) -> str:
 
 
 def handle_release_event(payload: dict):
+    # Reject each release-policy violation before reaching deployment dispatch.
+    # pylint: disable=too-many-return-statements
     """Handle GitHub release event"""
     action = payload.get("action", "")
     if action != "published":
         logger.info(f"Ignoring release action: {sanitize_for_logging(action)}")
         return jsonify({"status": "ignored", "action": action})
 
-    release = payload.get("release", {})
+    release = payload.get("release")
+    if not isinstance(release, dict):
+        return jsonify({"status": "ignored", "reason": "release metadata required"})
     tag = release.get("tag_name", "")
 
     if not tag:
         return jsonify({"status": "ignored", "reason": "no tag"})
+    # Missing flags are not proof of a stable release; accept explicit JSON false only.
+    if (
+        not isinstance(tag, str)
+        or not STABLE_TAG_PATTERN.fullmatch(tag)
+        or release.get("prerelease") is not False
+        or release.get("draft") is not False
+    ):
+        return jsonify({"status": "ignored", "reason": "published stable release required"})
+    if not AUTO_DEPLOY_STABLE_RELEASES:
+        return jsonify({"status": "ignored", "reason": "automatic stable deployment disabled"})
 
     repo = payload.get("repository", {}).get("name", "")
     logger.info(f"Processing release {sanitize_for_logging(tag)} for {sanitize_for_logging(repo)}")
@@ -252,28 +270,10 @@ def handle_release_event(payload: dict):
 
 
 def handle_push_event(payload: dict):
-    """Handle GitHub push event"""
+    """A branch or tag push never authorizes deployment."""
     ref = payload.get("ref", "")
-    branch = ref.replace("refs/heads/", "")
-
-    if branch not in ALLOWED_BRANCHES:
-        logger.info(f"Ignoring push to branch: {sanitize_for_logging(branch)}")
-        return jsonify({"status": "ignored", "branch": branch})
-
-    repo = payload.get("repository", {}).get("name", "")
-
-    if repo != "inverter-monitoring":
-        logger.info(f"Ignoring push to repo: {sanitize_for_logging(repo)}")
-        return jsonify({"status": "ignored", "repo": repo})
-
-    commits = payload.get("commits", [])
-    pusher = payload.get("pusher", {}).get("name", "unknown")
-
-    logger.info(
-        f"Received push to {sanitize_for_logging(branch)} by {sanitize_for_logging(pusher)} ({len(commits)} commits)"
-    )
-
-    return run_deploy_script()
+    branch = ref.removeprefix("refs/heads/") if isinstance(ref, str) else ""
+    return jsonify({"status": "ignored", "reason": "push deployment disabled", "branch": branch})
 
 
 if __name__ == "__main__":
