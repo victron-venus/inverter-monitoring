@@ -132,7 +132,7 @@ def update_inverter_dashboard(tag: str) -> tuple:
     success, output = run_command(
         [
             "curl",
-            "-s",
+            "-fsS",
             "--unix-socket",
             "/var/run/docker.sock",
             "-X",

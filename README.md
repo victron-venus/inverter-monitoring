@@ -338,3 +338,5 @@ For issues specific to:
 - **This integration**: Open an issue in this repository
 
 **Note:** This is a community project and is not affiliated with Victron Energy.
+
+Dashboard restart requests report failure when the Docker API rejects them (for example, a missing container or daemon error). A successful restart request does not independently verify the installed dashboard version.
