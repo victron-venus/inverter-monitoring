@@ -240,6 +240,18 @@ openssl rand -hex 32
 # Add to .env as WEBHOOK_SECRET
 ```
 
+The webhook requires `WEBHOOK_SECRET` to match the secret configured in GitHub.
+Every delivery must include a valid `X-Hub-Signature-256` HMAC for its exact body.
+Missing server configuration returns HTTP 503; missing, invalid, or mismatched
+signatures return HTTP 401. No deployment action is dispatched in either case.
+`GET /health` remains available when the webhook is unconfigured.
+
+**Existing installations:** unsigned deliveries are no longer accepted. Set the
+same generated secret in the service environment and GitHub webhook settings
+before your next service restart, then use GitHub's redelivery action to verify
+an intended delivery. The endpoint uses HMAC authentication, not browser sessions
+or cookies, so GitHub deliveries do not require a browser CSRF token.
+
 ### 2. Start webhook service
 ```bash
 docker-compose --profile webhook up -d
