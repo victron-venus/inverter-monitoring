@@ -119,7 +119,61 @@ def test_flux_query_parses_csv_with_annotations_and_multiple_tables(monkeypatch)
         def read(self):
             return csv_body.encode()
 
-    monkeypatch.setattr(gc.urllib.request, "urlopen", lambda req, timeout: FakeResp())
+    class FakeOpener:  # pylint: disable=missing-class-docstring
+        def open(self, req, timeout):
+            assert req.get_header("Authorization") == "Token t"
+            assert timeout == 60
+            return FakeResp()
+
+    monkeypatch.setattr(gc.urllib.request, "build_opener", lambda *handlers: FakeOpener())
     rows = gc.flux_query("http://localhost:8086", "t", "home", 'from(bucket: "inverter")')
     assert [r["_value"] for r in rows] == ["4", "7", "9"]
     assert [r["_field"] for r in rows] == ["grid_power", "pv_total", "pv_total"]
+
+
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://localhost/data", "http:///query"])
+def test_flux_query_rejects_non_http_endpoints_before_opening(monkeypatch, url):
+    from analysis import grid_correlation as gc  # pylint: disable=import-outside-toplevel
+
+    def unexpected_open(*_args):
+        pytest.fail("Invalid InfluxDB URL must not create an opener")
+
+    monkeypatch.setattr(gc.urllib.request, "build_opener", unexpected_open)
+    with pytest.raises(ValueError, match="invalid InfluxDB URL"):
+        gc.flux_query(url, "private-token", "home", "query")
+
+
+def test_flux_query_rejects_redirects_without_forwarding_token():
+    from http.server import (  # pylint: disable=import-outside-toplevel
+        BaseHTTPRequestHandler,
+        HTTPServer,
+    )
+    from threading import Thread  # pylint: disable=import-outside-toplevel
+
+    from analysis import grid_correlation as gc  # pylint: disable=import-outside-toplevel
+
+    requests = []
+
+    class RedirectHandler(BaseHTTPRequestHandler):  # pylint: disable=missing-class-docstring
+        def do_POST(self):  # pylint: disable=invalid-name
+            requests.append(self.headers.get("Authorization"))
+            self.send_response(302)
+            self.send_header("Location", "https://example.invalid/redirect-target")
+            self.end_headers()
+
+        def log_message(self, *_args):
+            pass
+
+    with HTTPServer(("127.0.0.1", 0), RedirectHandler) as server:
+        server.timeout = 5
+        worker = Thread(target=server.handle_request, daemon=True)
+        worker.start()
+        try:
+            with pytest.raises(ValueError, match="InfluxDB redirects are not allowed"):
+                gc.flux_query(
+                    f"http://127.0.0.1:{server.server_port}", "private-token", "home", "query"
+                )
+        finally:
+            worker.join(timeout=6)
+        assert not worker.is_alive()
+    assert requests == ["Token private-token"]
