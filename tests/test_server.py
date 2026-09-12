@@ -6,6 +6,10 @@ import hmac
 import logging
 import secrets
 import subprocess
+import socketserver
+import threading
+import tempfile
+from http.server import BaseHTTPRequestHandler
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -384,3 +388,42 @@ def test_push_wrong_repo_ignored(client, signed_requests):
         "/webhook", json=push_payload(repo="elsewhere"), headers={"X-GitHub-Event": "push"}
     )
     assert resp.get_json()["status"] == "ignored"
+
+
+@pytest.mark.parametrize("status", [204, 404, 500])
+def test_dashboard_restart_http_status(monkeypatch, status):
+    """Exercise real curl against an isolated Docker-shaped Unix HTTP endpoint."""
+
+    class Handler(BaseHTTPRequestHandler):
+        """Return a controlled Docker restart response without accessing Docker."""
+
+        def do_POST(self):  # pylint: disable=invalid-name
+            self.send_response(status)
+            self.end_headers()
+
+        def log_message(self, *_args):
+            pass
+
+    # Short socket paths also fit the macOS sockaddr_un limit.
+    with tempfile.TemporaryDirectory(prefix="restart-", dir="/tmp") as temporary:
+        socket_path = temporary + "/docker.sock"
+        real_run = server.run_command
+
+        def isolated_run(command, timeout):
+            command = list(command)
+            command[command.index("--unix-socket") + 1] = socket_path
+            return real_run(command, timeout)
+
+        monkeypatch.setattr(server, "run_command", isolated_run)
+        with socketserver.UnixStreamServer(socket_path, Handler) as endpoint:
+            endpoint.timeout = 2
+            worker = threading.Thread(target=endpoint.handle_request)
+            worker.start()
+            try:
+                ok, message = server.update_inverter_dashboard("v2.0.0")
+            finally:
+                worker.join(timeout=5)
+            assert not worker.is_alive()
+    assert ok is (status == 204)
+    if status >= 400:
+        assert message == "Failed: see server logs"
