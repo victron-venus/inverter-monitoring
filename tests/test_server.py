@@ -5,10 +5,10 @@ import hashlib
 import hmac
 import logging
 import secrets
-import subprocess
 import socketserver
-import threading
+import subprocess
 import tempfile
+import threading
 from http.server import BaseHTTPRequestHandler
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -404,9 +404,10 @@ def test_dashboard_restart_http_status(monkeypatch, status):
         def log_message(self, *_args):
             pass
 
-    # Short socket paths also fit the macOS sockaddr_un limit.
-    with tempfile.TemporaryDirectory(prefix="restart-", dir="/tmp") as temporary:
-        socket_path = temporary + "/docker.sock"
+    # A relative socket pathname fits the macOS sockaddr_un limit.
+    with tempfile.TemporaryDirectory(prefix="restart-") as temporary:
+        monkeypatch.chdir(temporary)
+        socket_path = "docker.sock"
         real_run = server.run_command
 
         def isolated_run(command, timeout):
