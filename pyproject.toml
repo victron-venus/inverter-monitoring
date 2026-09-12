@@ -49,3 +49,7 @@ ignore = [
 [tool.mypy]
 # Resolve namespace-package imports from the repository root consistently.
 explicit_package_bases = true
+
+[tool.bandit.assert_used]
+# Pytest assertions are test expectations, not production access controls.
+skips = ["*/tests/test_*.py", "*/conftest.py"]
