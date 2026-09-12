@@ -152,6 +152,9 @@ python3 analysis/grid_correlation.py --hours 24 \
 python3 analysis/grid_correlation.py --demo
 ```
 
+Use the direct HTTP or HTTPS InfluxDB endpoint. The analyzer rejects redirects
+so that its authorization token is never forwarded to another endpoint.
+
 The script computes correlation/lag between raw and derived grid, quantifies
 sawtooth (jitter = first-difference stddev), sweeps candidate coefficients by
 simulating the controller blend offline, and prints a ready-to-paste

@@ -192,6 +192,13 @@ def sweep(
 # --------------------------------------------------------------------------- #
 
 
+class _RejectRedirects(urllib.request.HTTPRedirectHandler):
+    """Keep the InfluxDB token on the explicitly configured endpoint."""
+
+    def redirect_request(self, *_args: object, **_kwargs: object) -> None:
+        raise ValueError("InfluxDB redirects are not allowed; configure the direct endpoint")
+
+
 def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
     """Run one Flux query, return parsed CSV rows as dicts."""
     parsed = urllib.parse.urlparse(url)
@@ -208,7 +215,8 @@ def flux_query(url: str, token: str, org: str, query: str) -> list[dict]:
         method="POST",
     )
     body: bytes = b""
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    opener = urllib.request.build_opener(_RejectRedirects)
+    with opener.open(req, timeout=60) as resp:
         body = resp.read()
     rows: list[dict] = []
     header: list[str] | None = None
