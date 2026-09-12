@@ -41,10 +41,9 @@ TAG_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
 def verify_signature(payload: bytes, signature: str) -> bool:
     """Verify GitHub webhook signature"""
     if not WEBHOOK_SECRET:
-        logger.warning("WEBHOOK_SECRET not set, skipping verification")
-        return True
+        return False
 
-    if not signature:
+    if not re.fullmatch(r"sha256=[0-9a-f]{64}", signature):
         return False
 
     expected = "sha256=" + hmac.new(WEBHOOK_SECRET.encode(), payload, hashlib.sha256).hexdigest()
@@ -179,25 +178,31 @@ def health():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """GitHub webhook endpoint"""
-    # Verify signature
+    if not WEBHOOK_SECRET:
+        logger.error("Webhook disabled: WEBHOOK_SECRET is not configured")
+        return jsonify({"error": "Webhook secret is not configured"}), 503
+
+    # GitHub authenticates machine deliveries with a body HMAC, not browser cookies.
+    # Verify signature before parsing or dispatching any event.
     signature = request.headers.get("X-Hub-Signature-256", "")
     if not verify_signature(request.data, signature):
         logger.warning("Invalid webhook signature")
         return jsonify({"error": "Invalid signature"}), 401
 
     # Parse event
-    raw_event = request.headers.get("X-GitHub-Event", "")
-    event = sanitize_for_logging(raw_event)
-    logger.info("Received %s event", event)
+    event = request.headers.get("X-GitHub-Event", "")
 
     if event == "release":
+        logger.info("Received release event")
         return handle_release_event(request.json)
 
     if event == "push":
+        logger.info("Received push event")
         return handle_push_event(request.json)
 
-    logger.info("Ignoring event: %s", event)
-    return jsonify({"status": "ignored", "event": event})
+    # Unknown event names are untrusted; keep them out of log records entirely.
+    logger.info("Ignoring unsupported GitHub event")
+    return jsonify({"status": "ignored", "event": sanitize_for_logging(event)})
 
 
 def sanitize_for_logging(value: str) -> str:
