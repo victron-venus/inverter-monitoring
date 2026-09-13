@@ -16,9 +16,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY webhook/server.py .
 COPY webhook/deploy-local.sh .
-RUN chmod +x deploy-local.sh
-
-RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin webhook
+RUN chmod +x deploy-local.sh \
+    && useradd --uid 10001 --create-home --shell /usr/sbin/nologin webhook
 USER webhook
 
 EXPOSE 9000
