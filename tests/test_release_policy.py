@@ -12,7 +12,7 @@ import pytest
 from webhook import server
 
 
-@pytest.fixture()
+@pytest.fixture
 def delivery(monkeypatch):
     secret = "release-policy-test-secret"
     monkeypatch.setattr(server, "WEBHOOK_SECRET", secret)
@@ -60,7 +60,16 @@ def test_stable_release_requires_operator_opt_in(delivery):
 
 @pytest.mark.parametrize(
     "tag",
-    ["nightly", "v1.2.3-beta.1", "v1.2.3-rc.1", "v1.2.3+build", "v01.2.3", "v1.2.3\n", "latest"],
+    [
+        "nightly",
+        "v1.2.3-beta.1",
+        "v1.2.3-rc.1",
+        "v1.2.3+build",
+        "v01.2.3",
+        "v1.2.3\n",
+        "v1.٢.3",
+        "latest",
+    ],
 )
 def test_channel_tags_never_deploy_even_with_opt_in(delivery, monkeypatch, tag):
     monkeypatch.setattr(server, "AUTO_DEPLOY_STABLE_RELEASES", True)

@@ -18,10 +18,13 @@ services:
       - AUTO_DEPLOY_STABLE_RELEASES=${AUTO_DEPLOY_STABLE_RELEASES:-false}
       - DEPLOY_SCRIPT=/app/deploy-local.sh
       - CERBO_HOST=Cerbo
+    group_add:
+      # Set to the host Docker socket group only for opt-in stable deployment.
+      - "${WEBHOOK_DOCKER_GID:-65534}"
     volumes:
       - .:/deploy:rw
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./ssh-root:/root/.ssh:ro
+      - ./ssh-root:/home/webhook/.ssh:ro
     networks:
       - monitoring
     profiles:

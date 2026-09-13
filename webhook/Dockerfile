@@ -18,6 +18,9 @@ COPY webhook/server.py .
 COPY webhook/deploy-local.sh .
 RUN chmod +x deploy-local.sh
 
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin webhook
+USER webhook
+
 EXPOSE 9000
 
 CMD ["gunicorn", "-b", "127.0.0.1:9000", "-w", "1", "server:app"]

@@ -31,7 +31,7 @@ DEPLOY_SCRIPT = os.environ.get("DEPLOY_SCRIPT", "/app/deploy-local.sh")
 AUTO_DEPLOY_STABLE_RELEASES = (
     os.environ.get("AUTO_DEPLOY_STABLE_RELEASES", "false").lower() == "true"
 )
-STABLE_TAG_PATTERN = re.compile(r"v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+STABLE_TAG_PATTERN = re.compile(r"v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", re.ASCII)
 
 # SSH config for Cerbo (mounted from host or configured in container)
 CERBO_HOST = os.environ.get("CERBO_HOST", "Cerbo")

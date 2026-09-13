@@ -282,6 +282,17 @@ an intended delivery. The endpoint uses HMAC authentication, not browser session
 or cookies, so GitHub deliveries do not require a browser CSRF token.
 
 ### 2. Start webhook service
+
+The container runs as `webhook` (UID 10001), with SSH configuration mounted at
+`/home/webhook/.ssh`. Provision that directory and its private keys for UID 10001
+with restrictive SSH permissions (directory mode 0700, private key mode 0600).
+Optional stable deployment also needs access to the host Docker socket: set
+`WEBHOOK_DOCKER_GID` to the socket's group ID on the Docker host before enabling
+`AUTO_DEPLOY_STABLE_RELEASES`. Compose passes this supplementary group to the
+container; the default group 65534 does not grant access to a normal Docker socket.
+Socket access
+grants control of Docker on the host; grant it only to this optional deployment service.
+
 ```bash
 docker-compose --profile webhook up -d
 ```
