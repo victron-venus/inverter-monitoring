@@ -1,29 +1,25 @@
-Inverter Monitoring v1.3.2
+Inverter Monitoring v1.3.3
 =========================
 
-Security and reliability
-------------------------
+Reliability
+-----------
 
-- The deployment webhook requires a configured WEBHOOK_SECRET and a valid
-  X-Hub-Signature-256 signature for the exact request body. Unsigned deliveries
-  are rejected before any deployment action; /health remains available.
-- Webhook logs no longer include untrusted X-GitHub-Event header values.
-- The grid smoothing analyzer accepts direct HTTP/HTTPS InfluxDB endpoints and
-  rejects redirects to prevent forwarding the authorization token.
+- Dashboard restart requests now report failure when Docker returns an HTTP
+  error, including missing containers and daemon failures. Error responses stay
+  generic; diagnostic details remain in server logs.
+- A successful restart request does not independently verify installation of
+  the requested dashboard version.
 
 Upgrade notes
 -------------
 
-Configure the same secret in the webhook service environment and GitHub webhook
-settings before restarting an existing service. Missing server configuration
-returns HTTP 503; a missing or invalid signature returns HTTP 401.
-
-If the analyzer previously relied on an HTTP redirect, configure the final
-InfluxDB endpoint directly. The release contains configuration files and Python
-source; it does not provide a compiled binary or deploy the monitoring stack.
+The signed webhook authentication and existing release deployment policy remain
+in effect. Automatic deployment stays disabled by default; the documented stable
+release opt-in remains an explicit operator choice.
 
 Validation
 ----------
 
-The current source passes 60 offline tests, Ruff, MyPy, Bandit medium/high
-security checks, dependency auditing, CodeQL, and Sonar analysis.
+Regression tests exercise real curl against an isolated Unix HTTP endpoint for
+successful and failed Docker restart responses. No live Docker daemon or device
+is used during these tests.
