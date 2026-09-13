@@ -188,7 +188,7 @@ wheels = [
 
 [[package]]
 name = "inverter-monitoring"
-version = "1.3.2"
+version = "1.3.3"
 source = { editable = "." }
 dependencies = [
     { name = "flask" },
