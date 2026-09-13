@@ -1,0 +1,14 @@
+{
+  "required": [
+    "webhook",
+    "version",
+    "pyproject.toml",
+    "uv.lock"
+  ],
+  "containers": {
+    "inverter-monitoring-container.oci.tar": {
+      "context": ".",
+      "dockerfile": "webhook/Dockerfile"
+    }
+  }
+}
