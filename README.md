@@ -261,6 +261,10 @@ action `published` can reach an update helper. Restore the switch to `false`
 afterwards. This listener does not verify registry readiness, so leave the switch
 off during normal release publication to avoid racing registry promotion.
 
+Dashboard restart requests report failure when the Docker API rejects them (for
+example, a missing container or daemon error). A successful restart request does
+not independently verify the installed dashboard version.
+
 The following configures authenticated delivery; it does not enable deployment:
 
 ### 1. Generate webhook secret
