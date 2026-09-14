@@ -32,6 +32,11 @@ def read_version(root: Path, policy: dict[str, Any]) -> str:
 def snapshot(root: Path, destination: Path) -> list[str]:
     """Copy tracked, present regular files; ignore untracked operator configuration."""
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
+    names += [
+        name
+        for name in (".release-plan.json", ".release-inputs.json")
+        if (root / name).is_file() and not (root / name).is_symlink()
+    ]
     selected = []
     for name in sorted(set(filter(None, names))):
         source = root / name
@@ -103,7 +108,11 @@ def build_python_distribution(root: Path, source: Path, output: Path) -> None:
 
 
 def build_containers(
-    source: Path, output: Path, config: dict[str, Any], policy: dict[str, Any]
+    source: Path,
+    output: Path,
+    config: dict[str, Any],
+    policy: dict[str, Any],
+    label_values: dict[str, str],
 ) -> None:
     """Build declared OCI assets through a local Docker endpoint."""
     host = subprocess.check_output(
@@ -113,6 +122,9 @@ def build_containers(
     host = os.environ.get("DOCKER_HOST", host)
     if not host.startswith(("unix://", "npipe://")):
         raise ValueError("Release builds require a local Docker endpoint")
+    label_args = [
+        value for key, label in label_values.items() for value in ("--label", f"{key}={label}")
+    ]
     for asset, image in config["containers"].items():
         if Path(asset).name != asset or not asset.endswith(".oci.tar"):
             raise ValueError("OCI asset names must be simple .oci.tar filenames")
@@ -127,6 +139,7 @@ def build_containers(
                 "docker",
                 "buildx",
                 "build",
+                *label_args,
                 "--platform",
                 image.get("platforms", "linux/amd64"),
                 "--provenance=true",
@@ -151,10 +164,22 @@ def build_candidate(
         raise ValueError("This repository only supports validation, not product releases")
     if not re.fullmatch(r"\d+\.\d+\.\d+", version, flags=re.ASCII):
         raise ValueError("Expected the numeric base release version X.Y.Z")
-    if read_version(root, policy) != version:
-        raise ValueError("Candidate version must match project metadata")
     if channel not in {"nightly", "beta", "rc"}:
         raise ValueError("Stable releases must promote an existing RC without rebuilding")
+    if "versioning" in policy:
+        subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("release_version_adapter.py")),
+                version,
+                channel,
+                "--root",
+                str(root),
+            ],
+            check=True,
+        )
+    elif read_version(root, policy) != version:
+        raise ValueError("Candidate version must match project metadata")
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     if any(output.iterdir()):
@@ -171,13 +196,25 @@ def build_candidate(
         archive_names = [
             name
             for name in names
-            if not includes or any(name == item or name.startswith(item + "/") for item in includes)
+            if name in {".release-plan.json", ".release-inputs.json"}
+            or not includes
+            or any(name == item or name.startswith(item + "/") for item in includes)
         ]
         archive(source, archive_names, output / f"{project}-{version}.tar.gz", project)
         if config.get("python_distribution"):
             build_python_distribution(root, source, output)
         if containers and config.get("containers"):
-            build_containers(source, output, config, policy)
+            label_values = (
+                json.loads(
+                    subprocess.check_output(
+                        [sys.executable, str(root / "scripts/release_container_labels.py")],
+                        text=True,
+                    )
+                )
+                if "versioning" in policy
+                else {}
+            )
+            build_containers(source, output, config, policy, label_values)
     assets = sorted(path for path in output.iterdir() if path.is_file())
     lines = []
     for asset in assets:

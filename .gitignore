@@ -24,3 +24,7 @@ release-dist/
 
 # Local CI coverage output
 coverage.xml
+# Frozen release overlays and final build staging
+.release-plan.json
+.release-inputs.json
+release-assets/
