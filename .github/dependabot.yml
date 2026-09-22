@@ -14,6 +14,9 @@ updates:
           - github/codeql-action
           - github/codeql-action/*
 
+      codeql:
+        patterns:
+          - github/codeql-action/*
   - package-ecosystem: docker
     directory: /webhook
     schedule:
