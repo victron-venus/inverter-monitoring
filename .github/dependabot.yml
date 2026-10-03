@@ -1,22 +1,5 @@
 version: 2
 updates:
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: daily
-    labels:
-      - dependencies
-      - github_actions
-      - automerge
-    groups:
-      codeql-actions:
-        patterns:
-          - github/codeql-action
-          - github/codeql-action/*
-
-      codeql:
-        patterns:
-          - github/codeql-action/*
   - package-ecosystem: docker
     directory: /webhook
     schedule:
