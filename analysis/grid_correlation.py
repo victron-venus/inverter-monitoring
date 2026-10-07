@@ -124,6 +124,22 @@ def ema(xs: list[float], alpha: float) -> list[float]:
     return out
 
 
+def _first_stage_blend(
+    raw: list[float],
+    derived: list[float],
+    weight: float,
+    derived_alpha: float,
+) -> list[float]:
+    """Filter the derived series, then mix it with the raw series by weight."""
+    blended: list[float] = []
+    filt_derived: float | None = None
+    for r, d in zip(raw, derived):
+        fd = d if filt_derived is None else derived_alpha * d + (1 - derived_alpha) * filt_derived
+        filt_derived = fd
+        blended.append(weight * fd + (1 - weight) * r)
+    return blended
+
+
 def simulate_blend(
     raw: list[float],
     derived: list[float],
@@ -132,13 +148,7 @@ def simulate_blend(
     ema_alpha: float,
 ) -> list[float]:
     """Offline replica of the controller pipeline for one candidate config."""
-    blended: list[float] = []
-    filt_derived: float | None = None
-    for r, d in zip(raw, derived):
-        fd = d if filt_derived is None else derived_alpha * d + (1 - derived_alpha) * filt_derived
-        filt_derived = fd
-        blended.append(weight * fd + (1 - weight) * r)
-    return ema(blended, ema_alpha)
+    return ema(_first_stage_blend(raw, derived, weight, derived_alpha), ema_alpha)
 
 
 @dataclass
@@ -172,8 +182,9 @@ def sweep(
     results: list[Candidate] = []
     for w in weights:
         for ad in derived_alphas:
+            blended = _first_stage_blend(raw, derived, w, ad)
             for ea in ema_alphas:
-                sim = simulate_blend(raw, derived, w, ad, ea)
+                sim = ema(blended, ea)
                 results.append(
                     Candidate(
                         weight=w,

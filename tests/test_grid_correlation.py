@@ -492,3 +492,118 @@ def test_required_series_fallback_aligns_fifty_minutes_and_missing_pv_exits_zero
     assert "Recommended" not in missing_report
     assert missing_exit == 0
     assert missing_report in missing_main.getvalue()
+
+
+def _public_sweep_reference(
+    raw,
+    derived,
+    weights=None,
+    derived_alphas=None,
+    ema_alphas=None,
+    top_n=5,
+):
+    """Order candidates from public blend calls and the documented score."""
+    weights = weights or [round(0.05 * i, 2) for i in range(1, 20)]
+    derived_alphas = derived_alphas or [0.05, 0.1, 0.15, 0.2, 0.3]
+    ema_alphas = ema_alphas or [0.15, 0.2, 0.3, 0.4]
+    ranked = []
+    for weight in weights:
+        for derived_alpha in derived_alphas:
+            for ema_alpha in ema_alphas:
+                simulated = simulate_blend(raw, derived, weight, derived_alpha, ema_alpha)
+                near_zero = near_zero_pct(simulated)
+                sigma = stddev(simulated)
+                ranked.append(
+                    (near_zero, -sigma, weight, derived_alpha, ema_alpha, near_zero, sigma)
+                )
+    ranked.sort(key=lambda row: (row[0], row[1]), reverse=True)
+    return [(row[2], row[3], row[4], row[5], row[6]) for row in ranked[:top_n]]
+
+
+def _sweep_rows(candidates):
+    return [
+        (item.weight, item.derived_alpha, item.ema_alpha, item.near_zero, item.sigma)
+        for item in candidates
+    ]
+
+
+def test_simulate_blend_golden_vector_keeps_inputs_and_zip_length():
+    raw = [0.0, 2.0, -2.0]
+    derived = [2.0, 0.0, 2.0]
+    raw_before = list(raw)
+    derived_before = list(derived)
+    assert simulate_blend(raw, derived, weight=0.25, derived_alpha=0.5, ema_alpha=0.5) == [
+        0.5,
+        1.125,
+        0.0,
+    ]
+    short_derived = [2.0]
+    assert simulate_blend(raw, short_derived, 0.25, 0.5, 0.5) == [0.5]
+    assert raw == raw_before
+    assert derived == derived_before
+    assert short_derived == [2.0]
+    bounded = [100.0, -100.0, 100.0000001]
+    assert simulate_blend(bounded, bounded, weight=0.0, derived_alpha=0.2, ema_alpha=1.0) == bounded
+    assert near_zero_pct(bounded) == pytest.approx(200.0 / 3.0)
+    assert simulate_blend(bounded, [0.0, 4.0], weight=1.0, derived_alpha=1.0, ema_alpha=1.0) == [
+        0.0,
+        4.0,
+    ]
+
+
+def test_sweep_matches_public_reference_for_order_defaults_and_ties():
+    raw = [0.0, 2.0, -2.0, 40.0]
+    derived = [2.0, 0.0, 2.0]
+    assert simulate_blend(raw, derived, weight=0.25, derived_alpha=0.5, ema_alpha=0.5) == [
+        0.5,
+        1.125,
+        0.0,
+    ]
+    duplicate = sweep(
+        raw,
+        derived,
+        weights=[0.25, 0.25],
+        derived_alphas=[0.5],
+        ema_alphas=[0.5, 0.5],
+        top_n=4,
+    )
+    expected = _public_sweep_reference(
+        raw,
+        derived,
+        weights=[0.25, 0.25],
+        derived_alphas=[0.5],
+        ema_alphas=[0.5, 0.5],
+        top_n=4,
+    )
+    assert _sweep_rows(duplicate) == expected
+    assert expected[0][:3] == (0.25, 0.5, 0.5)
+    assert len(expected) == 4
+    assert expected[0][3:] == expected[1][3:]
+    empty = sweep([], [], weights=[0.2, 0.2], derived_alphas=[0.1], ema_alphas=[0.3], top_n=2)
+    assert _sweep_rows(empty) == _public_sweep_reference(
+        [],
+        [],
+        weights=[0.2, 0.2],
+        derived_alphas=[0.1],
+        ema_alphas=[0.3],
+        top_n=2,
+    )
+    assert sweep(raw, derived, top_n=0) == []
+    negative = sweep(
+        raw,
+        derived,
+        weights=[0.2],
+        derived_alphas=[0.1, 0.2],
+        ema_alphas=[0.3],
+        top_n=-1,
+    )
+    assert _sweep_rows(negative) == _public_sweep_reference(
+        raw,
+        derived,
+        weights=[0.2],
+        derived_alphas=[0.1, 0.2],
+        ema_alphas=[0.3],
+        top_n=-1,
+    )
+    defaults = sweep(raw, derived, weights=[], derived_alphas=[], ema_alphas=[], top_n=3)
+    assert _sweep_rows(defaults) == _public_sweep_reference(raw, derived, top_n=3)
