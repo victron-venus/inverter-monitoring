@@ -43,25 +43,37 @@ flowchart TB
 ### 1. Configure Environment
 
 ```bash
-cp .env.example .env
-nano .env  # Set your INFLUX_TOKEN (generate with: openssl rand -hex 32)
+# New installations only; preserve an existing .env.
+(umask 077; cp -n .env.example .env)
+# Run separately for INFLUX_ADMIN_PASSWORD, GRAFANA_ADMIN_PASSWORD and INFLUX_TOKEN:
+openssl rand -hex 32
+nano .env  # Fill all three values and MQTT_HOST; never commit this file.
+chmod 600 .env
+docker compose config --quiet
 ```
+
+The example intentionally contains no usable passwords or token. Compose rejects
+missing or empty required values. Use separate generated values for each secret.
+For an existing installation, first follow the [credential and access migration
+guide](docs/secure-deployment.md); changing `.env` does not rotate stored accounts.
 
 ### 2. Start Full Stack
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts:
 - **InfluxDB** on http://localhost:8086
-- **Grafana** on http://localhost:3000 (admin/admin)
+- **Grafana** on http://localhost:3000 (the configured admin user and password)
 - **Telegraf** collecting MQTT → InfluxDB
 - **Loki** for logs on http://localhost:3100
 
 ### 3. Access Dashboards
 
-Open http://localhost:3000 - dashboards are auto-provisioned!
+Open http://localhost:3000 and log in; dashboards are auto-provisioned. Published
+ports bind to `127.0.0.1` and anonymous Grafana viewing is disabled by default.
+For remote access, use the [secure deployment guide](docs/secure-deployment.md).
 
 ### Alternative: Use Existing InfluxDB/Grafana
 
@@ -72,10 +84,12 @@ If you already have InfluxDB/Grafana running, just start Telegraf:
 INFLUX_URL=http://your-influxdb-host:8086
 
 # Start only Telegraf
-docker-compose up -d telegraf
+docker compose up -d --no-deps telegraf
 ```
 
-## Data Flow
+Compose validates the whole file, so the required credential variables must still
+be populated even when starting only Telegraf. `INFLUX_TOKEN` must be valid for
+the external instance; preserve its existing organization and bucket settings.
 
 ## Data Flow
 
@@ -229,15 +243,10 @@ Grafana panels can be embedded via iframe:
 </iframe>
 ```
 
-For public access without login, enable anonymous auth in Grafana:
-
-```ini
-# /etc/grafana/grafana.ini
-[auth.anonymous]
-enabled = true
-org_name = home
-org_role = Viewer
-```
+Anonymous viewing is an explicit opt-in: set `GRAFANA_ANONYMOUS_ENABLED=true`
+only after reviewing which dashboards and data become visible without login.
+This does not configure HTTPS or make public exposure safe; retain a restricted
+bind address and use the [access guidance](docs/secure-deployment.md).
 
 ## Release webhook and manual deployment
 
