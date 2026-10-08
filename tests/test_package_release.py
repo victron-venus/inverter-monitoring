@@ -2,7 +2,10 @@
 
 import hashlib
 import json
-import subprocess
+import shutil
+
+# Only fixed Git fixture commands in pytest-owned temporary directories.
+import subprocess  # nosec B404
 import tarfile
 from pathlib import Path
 from unittest.mock import patch
@@ -73,10 +76,13 @@ def package_fixture(root):
     (root / ".mcp.json").write_text("{}", encoding="utf-8")
     (root / "analysis").mkdir()
     (root / "analysis/report.txt").write_text("not for distribution", encoding="utf-8")
-    subprocess.run(["git", "init", "--quiet", str(root)], check=True)
-    subprocess.run(
+    git = shutil.which("git")
+    assert git is not None, "Git is required for the package snapshot regression"
+    # Fixed argv, no shell; root is created by pytest, not supplied by a user.
+    subprocess.run([git, "init", "--quiet", str(root)], check=True)  # nosec B603
+    subprocess.run(  # nosec B603
         [
-            "git",
+            git,
             "add",
             "app",
             "version",
