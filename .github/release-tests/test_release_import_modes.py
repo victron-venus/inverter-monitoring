@@ -36,9 +36,16 @@ class ReleaseImportTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_package_imports_without_scripts_on_path(self):
-        script = "import importlib; " + "; ".join(
-            f"importlib.import_module('scripts.{name}')" for name in MODULES
-        )
+        script = """
+import importlib
+modules = {name: importlib.import_module('scripts.' + name) for name in MODULES}
+assert modules['release_version_adapter'].version_plan is modules['version_plan']
+assert modules['release_versioned'].version_plan is modules['version_plan']
+assert modules['release_versioned'].rc is modules['release_control']
+assert modules['release_versioned'].client is importlib.import_module('scripts.release')
+assert modules['release_version_adapter'].version_plan is not modules['release_version_adapter']
+assert modules['release_versioned'].client is not modules['release_versioned']
+""".replace("MODULES", repr(MODULES))
         self.run_python("-c", script)
 
     def test_standalone_importlib_loads(self):
@@ -52,6 +59,12 @@ for name in MODULES:
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
+assert Path(sys.modules['release_version_adapter'].version_plan.__file__).resolve() == Path('scripts/version_plan.py').resolve()
+assert Path(sys.modules['release_versioned'].version_plan.__file__).resolve() == Path('scripts/version_plan.py').resolve()
+assert Path(sys.modules['release_versioned'].rc.__file__).resolve() == Path('scripts/release_control.py').resolve()
+assert Path(sys.modules['release_versioned'].client.__file__).resolve() == Path('scripts/release.py').resolve()
+assert sys.modules['release_version_adapter'].version_plan is not sys.modules['release_version_adapter']
+assert sys.modules['release_versioned'].client is not sys.modules['release_versioned']
 """.replace("MODULES", repr(MODULES))
         self.run_python("-c", script)
 
