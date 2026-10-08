@@ -18,4 +18,9 @@ These maintenance changes do not introduce a configuration or data migration. Re
 
 ### Security
 
+Pin uv 0.12.18 in CI and the webhook image, retaining an immutable image digest.
+This replaces the version listed in
+[GHSA-2cv4-cqwr-gwf7](https://github.com/advisories/GHSA-2cv4-cqwr-gwf7); that
+upstream issue affects Windows wheel installation, not this Linux webhook.
+
 Private vulnerability reporting and response policy are documented in SECURITY.md. This maintenance update strengthens release evidence and review instructions; it does not replace deployment authentication, network isolation or independent equipment safeguards. No new project CVE is announced by these changes.
