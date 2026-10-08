@@ -379,3 +379,9 @@ For issues specific to:
 - **This integration**: Open an issue in this repository
 
 **Note:** This is a community project and is not affiliated with Victron Energy.
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for reports, development checks and pull requests,
+[SECURITY.md](SECURITY.md) for private vulnerability reporting and deployment trust boundaries,
+and the [OpenSSF evidence index](docs/openssf-evidence.md) for assessment references and remaining verification.

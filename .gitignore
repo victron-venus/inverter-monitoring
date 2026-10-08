@@ -28,3 +28,6 @@ coverage.xml
 .release-plan.json
 .release-inputs.json
 release-assets/
+
+# Public contribution policy is maintained project documentation.
+!CONTRIBUTING.md

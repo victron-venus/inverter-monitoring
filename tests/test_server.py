@@ -6,7 +6,9 @@ import hmac
 import logging
 import secrets
 import socketserver
-import subprocess
+
+# Reviewed test harness: fixed commands and isolated fixture paths; no shell interpolation.
+import subprocess  # nosec B404
 import tempfile
 import threading
 from http.server import BaseHTTPRequestHandler

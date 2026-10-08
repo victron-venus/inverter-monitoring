@@ -24,14 +24,16 @@ from analysis.grid_correlation import (
 def test_pearson_perfect_and_uncorrelated():
     a = [float(i) for i in range(100)]
     assert pearson(a, a) == pytest.approx(1.0)
-    rng = random.Random(1)
+    # Deterministic synthetic telemetry for analysis/tests, never cryptographic randomness.
+    rng = random.Random(1)  # nosec B311
     noise = [rng.gauss(0, 100) for _ in range(200)]
     other = [rng.gauss(0, 100) for _ in range(200)]
     assert abs(pearson(noise, other)) < 0.3
 
 
 def test_ema_reduces_noise():
-    rng = random.Random(2)
+    # Deterministic synthetic telemetry for analysis/tests, never cryptographic randomness.
+    rng = random.Random(2)  # nosec B311
     signal = [100.0] * 500
     noisy = [v + rng.gauss(0, 50) for v in signal]
     assert stddev(ema(noisy, 0.3)) < stddev(noisy)
@@ -49,7 +51,8 @@ def test_near_zero_pct():
 
 
 def test_best_lag_finds_known_delay():
-    rng = random.Random(3)
+    # Deterministic synthetic telemetry for analysis/tests, never cryptographic randomness.
+    rng = random.Random(3)  # nosec B311
     a = [rng.gauss(0, 0.1) + math.sin(t / 20.0) * 10 for t in range(300)]
     delay = 7
     # b[t] = a[t - delay]: b events happen `delay` samples after a's
@@ -287,7 +290,8 @@ def test_optional_filtered_gt_does_not_trim_required_window(monkeypatch):
         )
         args = gc.argparse.Namespace(
             url="http://127.0.0.1:8086",
-            token="synthetic-test-token",
+            # Synthetic test credentials/sentinels; not valid external-service secrets.
+            token="synthetic-test-token",  # nosec B106
             org="test",
             bucket="test",
             hours=1,
@@ -416,7 +420,8 @@ def test_required_series_fallback_aligns_fifty_minutes_and_missing_pv_exits_zero
 
     args = gc.argparse.Namespace(
         url="http://127.0.0.1:8086",
-        token="synthetic-test-token",
+        # Synthetic test credentials/sentinels; not valid external-service secrets.
+        token="synthetic-test-token",  # nosec B106
         org="test",
         bucket="test",
         hours=1,
