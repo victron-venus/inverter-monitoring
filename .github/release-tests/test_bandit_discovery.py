@@ -17,7 +17,7 @@ class BanditDiscoveryTests(unittest.TestCase):
 
     def test_directory_exclusions_preserve_ci_and_source_prefixes(self):
         """Real findings in .github survive Git directory and Git file metadata."""
-        repository = Path(__file__).resolve().parents[1]
+        repository = Path(__file__).resolve().parents[2]
         original_path = sys.path.copy()
         sys.path.insert(0, str(repository / "scripts"))
         try:

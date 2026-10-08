@@ -43,7 +43,7 @@ def verify_discovery(root: Path) -> None:
             "unittest",
             "discover",
             "-s",
-            "tests",
+            ".github/release-tests",
             "-p",
             "test_bandit_discovery.py",
         ],
