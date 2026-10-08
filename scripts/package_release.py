@@ -61,16 +61,18 @@ def snapshot(root: Path, destination: Path) -> list[str]:
 
 def archive(snapshot_root: Path, names: list[str], output: Path, project: str) -> None:
     """Write a deterministic native/source archive preserving executable bits."""
-    with output.open("wb") as destination:
-        with gzip.GzipFile(filename="", mode="wb", fileobj=destination, mtime=0) as compressed:
-            with tarfile.open(fileobj=compressed, mode="w") as package:
-                for name in names:
-                    source = snapshot_root / name
-                    content = source.read_bytes()
-                    entry = tarfile.TarInfo(f"{project}/{name}")
-                    entry.size = len(content)
-                    entry.mode = 0o755 if source.stat().st_mode & 0o111 else 0o644
-                    package.addfile(entry, io.BytesIO(content))
+    with (
+        output.open("wb") as destination,
+        gzip.GzipFile(filename="", mode="wb", fileobj=destination, mtime=0) as compressed,
+        tarfile.open(fileobj=compressed, mode="w") as package,
+    ):
+        for name in names:
+            source = snapshot_root / name
+            content = source.read_bytes()
+            entry = tarfile.TarInfo(f"{project}/{name}")
+            entry.size = len(content)
+            entry.mode = 0o755 if source.stat().st_mode & 0o111 else 0o644
+            package.addfile(entry, io.BytesIO(content))
 
 
 def build_python_distribution(root: Path, source: Path, output: Path) -> None:
@@ -161,6 +163,22 @@ def build_containers(
         )
 
 
+def _archive_inputs(names: list[str], config: dict[str, Any]) -> list[str]:
+    """Validate required tracked inputs and select the source archive members."""
+    for required in config.get("required", []):
+        if not any(name == required or name.startswith(required + "/") for name in names):
+            raise ValueError(f"Required input is missing or not tracked: {required}")
+    includes = config.get("include")
+    archive_names = [
+        name
+        for name in names
+        if name in {".release-plan.json", ".release-inputs.json"}
+        or not includes
+        or any(name == item or name.startswith(item + "/") for item in includes)
+    ]
+    return archive_names
+
+
 def build_candidate(
     root: Path, version: str, channel: str, output: Path, *, containers: bool = True
 ) -> list[Path]:
@@ -197,17 +215,7 @@ def build_candidate(
         source = Path(directory) / project
         source.mkdir()
         names = snapshot(root, source)
-        for required in config.get("required", []):
-            if not any(name == required or name.startswith(required + "/") for name in names):
-                raise ValueError(f"Required input is missing or not tracked: {required}")
-        includes = config.get("include")
-        archive_names = [
-            name
-            for name in names
-            if name in {".release-plan.json", ".release-inputs.json"}
-            or not includes
-            or any(name == item or name.startswith(item + "/") for item in includes)
-        ]
+        archive_names = _archive_inputs(names, config)
         archive(source, archive_names, output / f"{project}-{version}.tar.gz", project)
         if config.get("python_distribution"):
             build_python_distribution(root, source, output)
