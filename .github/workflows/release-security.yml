@@ -20,7 +20,7 @@ jobs:
           python-version: '3.12'
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: 0.12.7
+          version: 0.12.18
       - run: bash scripts/ci.sh bandit
       - name: Block high and critical dependencies, secrets and misconfiguration
         uses: aquasecurity/trivy-action@c03d123cb480c08c69b054af418ea5e69fe6e57e # master
