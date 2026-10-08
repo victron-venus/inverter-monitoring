@@ -124,8 +124,26 @@ def test_run_command_exception_is_reported():
 # ---------------------------------------------------------------- update_inverter_control
 
 
-def test_update_control_rejects_injection_tag():
-    ok, msg = server.update_inverter_control("v1.0.0'; rm -rf /;")
+@pytest.mark.parametrize(
+    "tag",
+    [
+        "v1.0.0'; rm -rf /;",
+        "v1.2.3\n",
+        "v1.2.3$(id)",
+        "v1.2.3`id`",
+        "v1.2.3;id",
+        "v1.2.3 extra",
+        'v1.2.3"',
+        "v1.2.3／escape",
+        "x" * 101,
+    ],
+)
+def test_update_control_rejects_injection_tag(monkeypatch, tag):
+    def no_command(*args, **kwargs):
+        pytest.fail("Invalid tags must not start a local or remote command")
+
+    monkeypatch.setattr(server, "run_command", no_command)
+    ok, msg = server.update_inverter_control(tag)
     assert ok is False
     assert msg == "Failed: invalid tag format"
 
