@@ -8,7 +8,9 @@ import json
 import os
 import re
 import shutil
-import subprocess
+
+# CI tools use fixed executable choices and argv; no shell interpolation.
+import subprocess  # nosec B404
 import sys
 import tarfile
 import tomllib
@@ -31,7 +33,8 @@ def read_version(root: Path, policy: dict[str, Any]) -> str:
 
 def snapshot(root: Path, destination: Path) -> list[str]:
     """Copy tracked, present regular files; ignore untracked operator configuration."""
-    names = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
+    # Build/verification command from checked repository policy; argv remains data.
+    names = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")  # nosec B603, B607
     names += [
         name
         for name in (".release-plan.json", ".release-inputs.json")
@@ -73,7 +76,8 @@ def archive(snapshot_root: Path, names: list[str], output: Path, project: str) -
 def build_python_distribution(root: Path, source: Path, output: Path) -> None:
     """Build and validate Python distributions inside the tracked snapshot."""
     # Build backend writes remain in this snapshot, including egg-info.
-    subprocess.run(
+    # Build/verification command from checked repository policy; argv remains data.
+    subprocess.run(  # nosec B603, B607
         [
             "uv",
             "build",
@@ -93,7 +97,8 @@ def build_python_distribution(root: Path, source: Path, output: Path) -> None:
     )
     if len(distributions) != 2:
         raise ValueError("Expected one wheel and one Python source distribution")
-    subprocess.run(
+    # Build/verification command from checked repository policy; argv remains data.
+    subprocess.run(  # nosec B603, B607
         [
             "uvx",
             "--from",
@@ -115,7 +120,8 @@ def build_containers(
     label_values: dict[str, str],
 ) -> None:
     """Build declared OCI assets through a local Docker endpoint."""
-    host = subprocess.check_output(
+    # Build/verification command from checked repository policy; argv remains data.
+    host = subprocess.check_output(  # nosec B603, B607
         ["docker", "context", "inspect", "--format", "{{.Endpoints.docker.Host}}"],
         text=True,
     ).strip()
@@ -134,7 +140,8 @@ def build_containers(
         dockerfile = (source / image["dockerfile"]).resolve()
         context.relative_to(source.resolve())
         dockerfile.relative_to(source.resolve())
-        subprocess.run(
+        # Build/verification command from checked repository policy; argv remains data.
+        subprocess.run(  # nosec B603, B607
             [
                 "docker",
                 "buildx",
@@ -167,7 +174,8 @@ def build_candidate(
     if channel not in {"nightly", "beta", "rc"}:
         raise ValueError("Stable releases must promote an existing RC without rebuilding")
     if "versioning" in policy:
-        subprocess.run(
+        # Build/verification command from checked repository policy; argv remains data.
+        subprocess.run(  # nosec B603
             [
                 sys.executable,
                 str(Path(__file__).with_name("release_version_adapter.py")),
@@ -206,7 +214,8 @@ def build_candidate(
         if containers and config.get("containers"):
             label_values = (
                 json.loads(
-                    subprocess.check_output(
+                    # Build/verification command from checked repository policy; argv remains data.
+                    subprocess.check_output(  # nosec B603
                         [sys.executable, str(root / "scripts/release_container_labels.py")],
                         text=True,
                     )
