@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 # Bandit can return zero after parser/plugin exceptions; validate its report too.
 run_bandit() (
-  uv run --no-project --python 3.12.13 --with-requirements .github/requirements-bandit.txt python scripts/run_bandit.py
+  uv run --no-build --no-project --python 3.12.13 --with-requirements .github/requirements-bandit.txt python scripts/run_bandit.py
 )
 if [[ "${1:-}" == security || "${1:-}" == bandit ]]; then
   run_bandit
