@@ -384,13 +384,17 @@ def analyze(data: dict[str, list[float]]) -> str:
     filt_n = [filt_value for _, filt_value in filt_pairs] if len(filt_pairs) >= 50 else []
     raw_for_filtered = [raw_value for raw_value, _ in filt_pairs] if filt_n else []
 
-    lines.append("=== Grid Smoothing Analysis ===")
-    lines.append(f"samples analyzed: {n}")
-    lines.append("")
-    lines.append("Current signals:")
-    lines.append(
-        f"  raw CT grid   : sigma={stddev(raw_n):7.1f} W  jitter={jitter(raw_n):6.1f} W  "
-        f"zero-cross rate={zero_crossing_rate(raw_n):.4f}  near-zero={near_zero_pct(raw_n):5.1f}%"
+    lines.extend(
+        [
+            "=== Grid Smoothing Analysis ===",
+            f"samples analyzed: {n}",
+            "",
+            "Current signals:",
+            (
+                f"  raw CT grid   : sigma={stddev(raw_n):7.1f} W  jitter={jitter(raw_n):6.1f} W  "
+                f"zero-cross rate={zero_crossing_rate(raw_n):.4f}  near-zero={near_zero_pct(raw_n):5.1f}%"
+            ),
+        ]
     )
     if filt_n:
         # Missing optional minutes must not create artificial adjacent steps.
@@ -440,17 +444,21 @@ def analyze(data: dict[str, list[float]]) -> str:
             f"{c.near_zero:9.1f}%  {c.sigma:8.1f}"
         )
     best = top[0]
-    lines.append("")
-    lines.append("Recommended inverter-control local_config.py block:")
-    lines.append("```python")
-    lines.append("ENABLE_GRID_SMOOTHING_WITH_HOME = True")
-    lines.append(f"GRID_SMOOTHING_HOME_WEIGHT = {best.weight}")
-    lines.append(f"GRID_SMOOTHING_DERIVED_ALPHA = {best.derived_alpha}")
-    lines.append(f"EMA_ALPHA = {best.ema_alpha}")
-    lines.append("```")
-    lines.append("")
-    lines.append("Workflow: apply on Cerbo, watch the 'Grid Raw vs Smoothed' panel and")
-    lines.append("'Grid sigma 1h' stat for a day, re-run this script, iterate.")
+    lines.extend(
+        [
+            "",
+            "Recommended inverter-control local_config.py block:",
+            "```python",
+            "ENABLE_GRID_SMOOTHING_WITH_HOME = True",
+            f"GRID_SMOOTHING_HOME_WEIGHT = {best.weight}",
+            f"GRID_SMOOTHING_DERIVED_ALPHA = {best.derived_alpha}",
+            f"EMA_ALPHA = {best.ema_alpha}",
+            "```",
+            "",
+            "Workflow: apply on Cerbo, watch the 'Grid Raw vs Smoothed' panel and",
+            "'Grid sigma 1h' stat for a day, re-run this script, iterate.",
+        ]
+    )
     return "\n".join(lines)
 
 
