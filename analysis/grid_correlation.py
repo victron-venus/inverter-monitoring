@@ -337,7 +337,8 @@ def demo_data(n: int = 3600) -> dict[str, list[float]]:
     every ~20 s (the observed sawtooth). The Vue-derived grid tracks truth with
     a small delay and light noise.
     """
-    rng = random.Random(42)
+    # Deterministic synthetic telemetry for analysis/tests, never cryptographic randomness.
+    rng = random.Random(42)  # nosec B311
     true_net: list[float] = []
     home: list[float] = []
     pv: list[float] = []

@@ -16,7 +16,9 @@ import hmac
 import logging
 import os
 import re
-import subprocess
+
+# Subprocesses are used only for explicitly configured deployment operations.
+import subprocess  # nosec B404
 
 from flask import Flask, jsonify, request
 
@@ -58,7 +60,10 @@ def verify_signature(payload: bytes, signature: str) -> bool:
 def run_command(cmd: list, timeout: int = 300) -> tuple:
     """Run command and return (success, output)"""
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+        # Internal callers build argv; release tags are validated before remote-shell use.
+        result = subprocess.run(  # nosec B603
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        )
         return result.returncode == 0, result.stdout + result.stderr
     except subprocess.TimeoutExpired:
         return False, "Command timed out"
@@ -155,7 +160,8 @@ def update_inverter_dashboard(tag: str) -> tuple:
 def run_deploy_script():
     """Execute the deploy script and handle results"""
     try:
-        result = subprocess.run(
+        # DEPLOY_SCRIPT is operator configuration, never a request-supplied executable.
+        result = subprocess.run(  # nosec B603
             [DEPLOY_SCRIPT], capture_output=True, text=True, timeout=300, check=False
         )
 

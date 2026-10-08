@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-# Vendored release toolkit; change the toolkit source, then render again.
-# ruff: noqa
-# mypy: ignore-errors
-# pylint: skip-file
-# fmt: off
 """Reserve immutable version plans through a repository-scoped GitHub CAS ledger.
 
 The dedicated branch is metadata only. No operation changes the default branch,
@@ -13,16 +8,26 @@ an existing plan, a release tag, or published package bytes.
 from __future__ import annotations
 
 import base64
-import subprocess
 
-import release_control as rc
-import version_plan
+# Subprocess calls below use argument vectors with shell=False.
+import subprocess  # nosec B404
+from typing import TYPE_CHECKING, cast
+
+if TYPE_CHECKING or __package__:
+    from . import release_control as rc
+else:
+    import release_control as rc
+if TYPE_CHECKING or __package__:
+    from . import version_plan
+else:
+    import version_plan
 
 BRANCH = "release-version-state"
 FILE = "release-version-state.json"
 READ_PATH = f"contents/{FILE}?ref={BRANCH}"
 WRITE_PATH = f"contents/{FILE}"
 REF_PATH = f"git/ref/heads/{BRANCH}"
+RUN_ID_LABEL = "run ID"
 
 
 class StateGitHub(rc.GitHub):
@@ -43,7 +48,8 @@ class StateGitHub(rc.GitHub):
                 "Invalid ledger write",
             )
         return self.response(
-            subprocess.run(
+            # Developer/CI toolchain selected by the invoking operator via PATH.
+            subprocess.run(  # nosec B603, B607
                 [
                     "gh",
                     "api",
@@ -63,7 +69,7 @@ class StateGitHub(rc.GitHub):
         )
 
 
-def read_state(gh: StateGitHub) -> tuple[dict, str | None]:
+def read_state(gh: rc.GitHub) -> tuple[dict, str | None]:
     """Return the complete ledger and its compare-and-swap blob identity."""
     # JSON booleans must not pass as integer schema, counter or floor values.
     # pylint: disable=unidiomatic-typecheck
@@ -79,16 +85,13 @@ def read_state(gh: StateGitHub) -> tuple[dict, str | None]:
         "Ledger must be a regular JSON file",
     )
     raw = base64.b64decode("".join(content["content"].split()), validate=True)
-    rc.require(
-        len(raw) <= 4_000_000, "Ledger requires compaction before another allocation"
-    )
+    rc.require(len(raw) <= 4_000_000, "Ledger requires compaction before another allocation")
     state = rc.parse_json(raw, "release version ledger")
     rc.require(
-        isinstance(state, dict)
-        and type(state.get("schema")) is int
-        and state["schema"] == 1,
+        isinstance(state, dict) and type(state.get("schema")) is int and state["schema"] == 1,
         "Unsupported version ledger schema",
     )
+    state = cast(dict, state)
     rc.require(
         type(state.get("counter")) is int and state["counter"] >= 0,
         "Invalid ledger counter",
@@ -103,14 +106,12 @@ def read_state(gh: StateGitHub) -> tuple[dict, str | None]:
         rc.positive(key, "ledger run ID")
         rc.require(isinstance(record, dict), "Invalid version reservation")
         plan = version_plan.validate_plan(record.get("plan"))
-        rc.require(
-            plan["build_number"] <= state["counter"], "Ledger counter moved backwards"
-        )
+        rc.require(plan["build_number"] <= state["counter"], "Ledger counter moved backwards")
     rc.require(rc.SHA_RE.fullmatch(content.get("sha", "")), "Invalid ledger blob SHA")
     return state, content["sha"]
 
 
-def write_state(gh: StateGitHub, state: dict, previous: str | None) -> None:
+def write_state(gh: rc.GitHub, state: dict, previous: str | None) -> None:
     """GitHub rejects a stale blob SHA; never retry a conflicting write silently."""
     body = {
         "branch": BRANCH,
@@ -125,7 +126,7 @@ def write_state(gh: StateGitHub, state: dict, previous: str | None) -> None:
 # Keep every immutable reservation input and its CAS state explicit.
 # pylint: disable-next=too-many-arguments,too-many-locals
 def reserve_plan(
-    gh: StateGitHub,
+    gh: rc.GitHub,
     policy: dict,
     base: str,
     channel: str,
@@ -138,7 +139,7 @@ def reserve_plan(
     """Allocate once per Actions run and bind retries to the exact same inputs."""
     # A boolean policy floor must not pass as an integer.
     # pylint: disable=unidiomatic-typecheck
-    run_key = str(rc.positive(run_id, "run ID"))
+    run_key = str(rc.positive(run_id, RUN_ID_LABEL))
     state, previous = read_state(gh)
     if run_key in state["plans"]:
         record = state["plans"][run_key]
@@ -147,9 +148,7 @@ def reserve_plan(
             plan["base_version"] == base and plan["channel"] == channel,
             "Run already reserved a different release identity",
         )
-        rc.require(
-            record.get("parent") == parent, "Run already reserved a different RC"
-        )
+        rc.require(record.get("parent") == parent, "Run already reserved a different RC")
         return plan
     sequence = None
     if channel in {"beta", "rc"}:
@@ -157,8 +156,7 @@ def reserve_plan(
         reserved = [
             record["plan"]["sequence"]
             for record in state["plans"].values()
-            if record["plan"]["base_version"] == base
-            and record["plan"]["channel"] == channel
+            if record["plan"]["base_version"] == base and record["plan"]["channel"] == channel
         ]
         sequence = max(sequence, max(reserved, default=0) + 1)
     elif channel == "nightly":
@@ -176,19 +174,17 @@ def reserve_plan(
     return plan
 
 
-def verify_reservation(
-    gh: StateGitHub, plan: dict, run_id: int, parent: dict | None = None
-) -> None:
+def verify_reservation(gh: rc.GitHub, plan: dict, run_id: int, parent: dict | None = None) -> None:
     """Bind publication to its durable plan and prevent delayed numeric downgrades."""
     state, _ = read_state(gh)
     _verify_reservation(gh, state, plan, run_id, parent)
 
 
 def _verify_reservation(
-    gh: StateGitHub, state: dict, plan: dict, run_id: int, parent: dict | None
+    gh: rc.GitHub, state: dict, plan: dict, run_id: int, parent: dict | None
 ) -> None:
     version_plan.validate_plan(plan)
-    record = state["plans"].get(str(rc.positive(run_id, "run ID")))
+    record = state["plans"].get(str(rc.positive(run_id, RUN_ID_LABEL)))
     rc.require(
         record == {"plan": plan, "parent": parent},
         "Version reservation differs from build plan",
@@ -198,22 +194,17 @@ def _verify_reservation(
         "Build number has already reached or fallen below the publication floor",
     )
     published = {
-        release.get("tag_name")
-        for release in gh.pages("releases")
-        if release.get("draft") is False
+        release.get("tag_name") for release in gh.pages("releases") if release.get("draft") is False
     }
     newer = [
         item["plan"]
         for item in state["plans"].values()
-        if item["plan"]["tag"] in published
-        and item["plan"]["build_number"] >= plan["build_number"]
+        if item["plan"]["tag"] in published and item["plan"]["build_number"] >= plan["build_number"]
     ]
-    rc.require(
-        not newer, "A package with this or a newer build number was already published"
-    )
+    rc.require(not newer, "A package with this or a newer build number was already published")
 
 
-def verify_promotion_order(gh: StateGitHub, plan: dict) -> None:
+def verify_promotion_order(gh: rc.GitHub, plan: dict) -> None:
     """Keep an accepted RC's native counter safe when copying it to stable.
 
     The selected RC is already published and is intentionally ignored. A later
@@ -224,24 +215,20 @@ def verify_promotion_order(gh: StateGitHub, plan: dict) -> None:
     _verify_promotion_order(gh, state, plan)
 
 
-def _verify_promotion_order(gh: StateGitHub, state: dict, plan: dict) -> None:
+def _verify_promotion_order(gh: rc.GitHub, state: dict, plan: dict) -> None:
     version_plan.validate_plan(plan)
     rc.require(
         plan["channel"] == "rc" and plan["promotion"] == "promote-bytes",
         "Byte promotion requires a promote-bytes RC plan",
     )
     matching = [record for record in state["plans"].values() if record["plan"] == plan]
-    rc.require(
-        len(matching) == 1, "Accepted RC has no unique durable version reservation"
-    )
+    rc.require(len(matching) == 1, "Accepted RC has no unique durable version reservation")
     rc.require(
         plan["build_number"] >= state["publication_floor"],
         "Accepted RC build number is below the publication floor",
     )
     published = {
-        release.get("tag_name")
-        for release in gh.pages("releases")
-        if release.get("draft") is False
+        release.get("tag_name") for release in gh.pages("releases") if release.get("draft") is False
     }
     rc.require(plan["tag"] in published, "Accepted RC is no longer published")
     newer = [
@@ -255,7 +242,7 @@ def _verify_promotion_order(gh: StateGitHub, state: dict, plan: dict) -> None:
 
 
 def begin_publication(
-    gh: StateGitHub,
+    gh: rc.GitHub,
     plan: dict,
     run_id: int,
     parent: dict | None = None,
@@ -267,7 +254,7 @@ def begin_publication(
     needs a new reservation in a new run; the ledger must never be reset to retry.
     Byte promotion intentionally keeps the already-published RC's number.
     """
-    rc.positive(run_id, "run ID")
+    rc.positive(run_id, RUN_ID_LABEL)
     # Truthy strings are not valid publication flags.
     # pylint: disable-next=unidiomatic-typecheck
     rc.require(type(promotion) is bool, "Invalid publication promotion flag")

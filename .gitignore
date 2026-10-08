@@ -28,3 +28,9 @@ coverage.xml
 .release-plan.json
 .release-inputs.json
 release-assets/
+
+# Public contribution policy is maintained project documentation.
+!CONTRIBUTING.md
+
+# Versioned human-readable release notes.
+!CHANGELOG.md
