@@ -24,6 +24,7 @@ import time
 import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 from urllib.parse import quote, unquote
 
 WORKFLOW = ".github/workflows/release-pipeline.yml"
@@ -31,7 +32,7 @@ GITHUB_HOSTNAME = "github.com"
 MANIFEST = "release-manifest.json"
 POLICY = ".release-policy.json"
 EVIDENCE = Path(".release-evidence") / MANIFEST
-ASSET_RESTRICTIONS = ()
+ASSET_RESTRICTIONS: tuple[dict, ...] = ()
 VERSION_PATTERN = r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
 VERSION_RE = re.compile(VERSION_PATTERN, re.ASCII)
 TAG_RE = re.compile(
@@ -98,7 +99,7 @@ def positive(value: object, name: str) -> int:
     """Parse a positive integer identifier without accepting booleans."""
     require(isinstance(value, (str, int)) and not isinstance(value, bool), f"Invalid {name}")
     require(bool(re.fullmatch(r"[1-9]\d*", str(value), re.ASCII)), f"Invalid {name}")
-    return int(value)
+    return int(cast(str | int, value))
 
 
 def digest(data: bytes) -> str:
@@ -147,7 +148,7 @@ def stream_identity(source, destination=None) -> dict:
     return {"size": size, "sha256": checksum.hexdigest()}
 
 
-def download_asset(gh, asset_id: int, destination: Path) -> dict:
+def download_asset(gh, asset_id: object, destination: Path) -> dict:
     """Stage one asset exclusively and discard incomplete or failed downloads."""
     path = f"releases/assets/{positive(asset_id, 'asset ID')}"
     output = destination.open("xb+")
@@ -225,7 +226,7 @@ class GitHub:
         require(result.returncode == 0, "Publication token permission probe failed")
         headers, separator, body = result.stdout.replace(b"\r\n", b"\n").partition(b"\n\n")
         require(bool(separator), "Publication token permission headers are missing")
-        scopes = set()
+        scopes: set[str] = set()
         for line in headers.decode("utf-8", errors="replace").splitlines():
             key, colon, value = line.partition(":")
             if colon and key.lower() == "x-oauth-scopes":
@@ -240,6 +241,7 @@ class GitHub:
             and repository["permissions"].get("push") is True,
             "Publication token cannot write the expected repository",
         )
+        repository = cast(dict, repository)
         require(
             "workflow" in scopes
             and ("repo" in scopes or (repository["private"] is False and "public_repo" in scopes)),
@@ -333,10 +335,12 @@ class GitHub:
         raw = self.request(path, mode="pages")
         pages = parse_json(raw, path)
         require(isinstance(pages, list), f"Invalid pagination response: {path}")
-        records = []
+        pages = cast(list, pages)
+        records: list[object] = []
         for page in pages:
             values = page.get(field) if field and isinstance(page, dict) else page
             require(isinstance(values, list), f"Invalid paginated records: {path}")
+            values = cast(list, values)
             records.extend(values)
         return records
 
@@ -433,6 +437,7 @@ def repository_info(gh: GitHub) -> dict:
 def require_release_policy(policy: object, repo: str, qualified: bool) -> None:
     """Check policy identity, release mode, and required eligibility blockers."""
     require(isinstance(policy, dict), "Source release policy must be an object")
+    policy = cast(dict, policy)
     require(
         isinstance(policy.get("repository"), str) and policy["repository"].lower() == repo.lower(),
         "Source policy repository mismatch",
@@ -502,6 +507,7 @@ def validate_policy_snapshot(snapshot: object, repo: str) -> None:
         and snapshot.get("path") == POLICY,
         "Manifest requires a versioned source policy snapshot",
     )
+    snapshot = cast(dict, snapshot)
     require(
         isinstance(snapshot.get("git_blob_sha"), str)
         and SHA_RE.fullmatch(snapshot["git_blob_sha"])
@@ -717,7 +723,7 @@ def check_execution(gh: GitHub, run_id: int, channel: str, info: dict, run: dict
     if event == "workflow_dispatch":
         event_file = os.environ.get("GITHUB_EVENT_PATH")
         require(bool(event_file), "Missing workflow dispatch event")
-        payload = parse_json(Path(event_file).read_bytes(), "workflow dispatch event")
+        payload = parse_json(Path(cast(str, event_file)).read_bytes(), "workflow dispatch event")
         require(
             isinstance(payload, dict) and payload.get("inputs", {}).get("channel") == channel,
             f"Workflow dispatch input channel must be {channel}",
@@ -987,7 +993,7 @@ def _release_fence(line: str) -> tuple[str, int, str] | None:
 def _release_code_span_ends(line: str) -> dict[int, int]:
     """Find equal-length inline backtick pairs in one linear scan and reverse pass."""
     runs = [(match.start(), match.end()) for match in re.finditer(r"`+", line)]
-    following = {}
+    following: dict[int, int] = {}
     ends = {}
     for start, end in reversed(runs):
         length = end - start
@@ -1153,7 +1159,7 @@ def release_notes(gh: GitHub, tag: str, sha: str, provenance: str) -> str:
         return provenance
     require(source == "CHANGELOG.md", "Unsupported release notes source")
     require(TAG_RE.fullmatch(tag), "Invalid release notes tag")
-    base_version = VERSION_RE.match(tag[1:]).group(0)
+    base_version = cast(re.Match[str], VERSION_RE.match(tag[1:])).group(0)
     response = gh.api(f"contents/CHANGELOG.md?ref={sha}")
     require(
         isinstance(response, dict)
@@ -1188,7 +1194,10 @@ def release_notes(gh: GitHub, tag: str, sha: str, provenance: str) -> str:
             title,
         )
     ]
-    require(len(matches) == 1 and matches[0][0], "Release needs one nonempty changelog section")
+    require(
+        len(matches) == 1 and matches[0][0],
+        "Release needs one nonempty changelog section",
+    )
     notes, visible_notes = matches[0]
     require(
         not _release_has_setext_heading(notes),
@@ -1424,6 +1433,7 @@ def validate_manifest(raw: bytes, repo: str, rc_tag: str, allow_final: bool = Fa
         and manifest["schema"] == 1,
         "Unsupported manifest schema",
     )
+    manifest = cast(dict, manifest)
     require(
         isinstance(manifest.get("repository"), str)
         and manifest["repository"].lower() == repo.lower(),
@@ -1431,6 +1441,7 @@ def validate_manifest(raw: bytes, repo: str, rc_tag: str, allow_final: bool = Fa
     )
     base_version = manifest.get("version")
     require(isinstance(base_version, str), "Missing manifest version")
+    base_version = cast(str, base_version)
     version(base_version)
     final = allow_final and manifest.get("channel") == "stable"
     if final:
@@ -1457,7 +1468,10 @@ def validate_manifest(raw: bytes, repo: str, rc_tag: str, allow_final: bool = Fa
     if versioning:
         # Optional imports preserve the standalone legacy engine contract.
         # pylint: disable-next=import-outside-toplevel
-        from version_plan import plan_digest, validate_plan
+        if TYPE_CHECKING or __package__:
+            from .version_plan import plan_digest, validate_plan
+        else:
+            from version_plan import plan_digest, validate_plan
 
         plan = validate_plan(
             manifest.get("version_plan"),
@@ -1482,6 +1496,7 @@ def validate_manifest(raw: bytes, repo: str, rc_tag: str, allow_final: bool = Fa
             and set(parent) == {"tag", "manifest_sha256", "source_sha", "run_id"},
             "Final manifest needs accepted RC provenance",
         )
+        parent = cast(dict, parent)
         require(
             isinstance(parent["tag"], str)
             and re.fullmatch(rf"v{re.escape(base_version)}-rc\.[1-9]\d*", parent["tag"])
@@ -1614,6 +1629,26 @@ def require_reviewers(gh: GitHub) -> None:
 
 # Preserve the ordered security checks and staged bytes within one transaction.
 # pylint: disable-next=too-many-locals,too-many-statements
+def _verify_versioned_promotion(gh: GitHub, plan: dict) -> None:
+    """Load the optional ledger only when checking a versioned promotion."""
+    if TYPE_CHECKING or __package__:
+        from .release_state import verify_promotion_order
+    else:
+        from release_state import verify_promotion_order
+
+    verify_promotion_order(gh, plan)
+
+
+def _begin_versioned_promotion(gh: GitHub, plan: dict, run_id: int) -> None:
+    """Record the publication floor after the promotion preflight succeeds."""
+    if TYPE_CHECKING or __package__:
+        from .release_state import begin_publication
+    else:
+        from release_state import begin_publication
+
+    begin_publication(gh, plan, run_id, promotion=True)
+
+
 def promote(args) -> dict:
     """Verify an approved RC and publish the same bytes under a new stable tag."""
     gh = GitHub(args.repo)
@@ -1652,10 +1687,7 @@ def promote(args) -> dict:
         "This RC requires a separately validated final build; byte promotion is disabled",
     )
     if manifest.get("version_plan"):
-        # pylint: disable-next=import-outside-toplevel
-        from release_state import verify_promotion_order
-
-        verify_promotion_order(gh, manifest["version_plan"])
+        _verify_versioned_promotion(gh, manifest["version_plan"])
     require(
         policy_snapshot == manifest["source_policy"],
         "Manifest policy snapshot differs from the policy at the candidate source commit",
@@ -1738,11 +1770,8 @@ def promote(args) -> dict:
             f"Assets and `{MANIFEST}` are byte-for-byte copies of the verified release candidate.",
         )
         if manifest.get("version_plan"):
-            verify_promotion_order(gh, manifest["version_plan"])
-            # pylint: disable-next=import-outside-toplevel
-            from release_state import begin_publication
-
-            begin_publication(gh, manifest["version_plan"], current_id, promotion=True)
+            _verify_versioned_promotion(gh, manifest["version_plan"])
+            _begin_versioned_promotion(gh, manifest["version_plan"], current_id)
         release = _publish_prepared(
             gh,
             tag,

@@ -16,9 +16,16 @@ import stat
 import subprocess  # nosec B404
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-import version_plan
-from release_control import stream_identity
+if TYPE_CHECKING or __package__:
+    from . import version_plan
+else:
+    import version_plan
+if TYPE_CHECKING or __package__:
+    from .release_control import stream_identity
+else:
+    from release_control import stream_identity
 
 MAX_RECEIPT_BYTES = 2_000_000
 
@@ -178,7 +185,7 @@ def verify_receipts(directory: Path, plan: dict, payloads: list[dict], policy=No
     }
     if not receipts:
         raise ValueError("Versioned release has no build receipts")
-    covered = set()
+    covered: set[str] = set()
     results = []
     for name in sorted(receipts):
         with (directory / name).open("rb") as stream:
@@ -196,7 +203,7 @@ def verify_receipts(directory: Path, plan: dict, payloads: list[dict], policy=No
 
 def validate_input_fields(files: list[dict], policy: dict, plan: dict) -> None:
     """Check that receipts describe the declared projections, not just file names."""
-    expected = {}
+    expected: dict[str, list[dict]] = {}
     for declaration in policy["versioning"]["files"]:
         value = {
             "format": declaration["format"],

@@ -16,6 +16,8 @@ before the first write, preserve unrelated fields, and reject symlink traversal.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import argparse
 import ast
 import email.parser
@@ -36,7 +38,10 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 import tomllib
-from release_control import atomic_write_bytes
+if TYPE_CHECKING or __package__:
+    from .release_control import atomic_write_bytes
+else:
+    from release_control import atomic_write_bytes
 
 BASE = re.compile(r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\Z", re.ASCII)
 SHA = re.compile(r"[0-9a-f]{40}\Z", re.ASCII)
@@ -721,15 +726,33 @@ def _toml_token(replacement, original):
     return json.dumps(replacement)
 
 
+def _toml_assignment_separator(line):
+    """Find the unquoted equals sign before any TOML comment."""
+    index, quote = 0, None
+    while index < len(line):
+        if quote:
+            index, quote = _toml_quote_step(line, index, quote)
+            continue
+        character = line[index]
+        if character in "\"'":
+            quote = character
+        elif character in "#\r\n":
+            return None
+        elif character == "=":
+            return index
+        index += 1
+    return None
+
+
 def _toml_assignment(line, current, target, replacement):
     """Locate a single-line assignment only in the selected TOML table."""
-    key_text, separator, _ = line.partition("=")
-    if not separator or not key_text.strip() or "#" in key_text or "\n" in key_text:
+    separator = _toml_assignment_separator(line)
+    if separator is None or not line[:separator].strip():
         return None
-    key = _toml_key(key_text.strip())
+    key = _toml_key(line[:separator].strip())
     if current + key != target:
         return None
-    start = len(key_text) + 1
+    start = separator + 1
     while start < len(line) and line[start].isspace():
         start += 1
     scalar = re.match(
