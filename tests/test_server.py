@@ -20,14 +20,14 @@ import pytest
 from webhook import server
 
 
-@pytest.fixture()
+@pytest.fixture
 def client():
     server.app.config["TESTING"] = True
     with server.app.test_client() as c:
         yield c
 
 
-@pytest.fixture()
+@pytest.fixture
 def signed_requests(client, monkeypatch):
     """Sign functional-test deliveries using the exact JSON bytes sent to Flask."""
     secret = secrets.token_hex(32)
