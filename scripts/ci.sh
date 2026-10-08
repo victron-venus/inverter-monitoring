@@ -13,6 +13,8 @@ if [[ "${1:-}" == security || "${1:-}" == bandit ]]; then
   fi
   exit 0
 fi
+# Compose tests only render temporary configuration; no Docker daemon is needed.
+docker compose version
 uv sync --locked --all-extras --no-build --no-install-project
 uv run --no-sync --no-build --with ruff==0.16.5 ruff check .
 uv run --no-sync --no-build --with ruff==0.16.5 ruff format --check .

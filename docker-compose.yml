@@ -12,7 +12,7 @@ services:
     container_name: deploy-webhook
     restart: unless-stopped
     ports:
-      - "9001:9000"
+      - "${MONITORING_BIND_ADDRESS:-127.0.0.1}:9001:9000"
     environment:
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - AUTO_DEPLOY_STABLE_RELEASES=${AUTO_DEPLOY_STABLE_RELEASES:-false}
@@ -39,14 +39,14 @@ services:
     container_name: influxdb
     restart: unless-stopped
     ports:
-      - "8086:8086"
+      - "${MONITORING_BIND_ADDRESS:-127.0.0.1}:8086:8086"
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_ADMIN_USER:-admin}
-      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_ADMIN_PASSWORD:-changeme123}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_ADMIN_PASSWORD:?Set a unique INFLUX_ADMIN_PASSWORD in .env}
       - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG:-home}
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET:-inverter}
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN:?Set INFLUX_TOKEN in .env}
     volumes:
       - influxdb-data:/var/lib/influxdb2
       - influxdb-config:/etc/influxdb2
@@ -63,14 +63,14 @@ services:
     container_name: grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${MONITORING_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
-      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set a unique GRAFANA_ADMIN_PASSWORD in .env}
+      - GF_AUTH_ANONYMOUS_ENABLED=${GRAFANA_ANONYMOUS_ENABLED:-false}
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/inverter-overview.json
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_TOKEN=${INFLUX_TOKEN:?Set INFLUX_TOKEN in .env}
       - INFLUX_ORG=${INFLUX_ORG:-home}
       - INFLUX_BUCKET=${INFLUX_BUCKET:-inverter}
     volumes:
@@ -94,7 +94,7 @@ services:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
     environment:
       - INFLUX_URL=${INFLUX_URL:-http://influxdb:8086}
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_TOKEN=${INFLUX_TOKEN:?Set INFLUX_TOKEN in .env}
       - INFLUX_ORG=${INFLUX_ORG:-home}
       - INFLUX_BUCKET=${INFLUX_BUCKET:-inverter}
       - MQTT_HOST=${MQTT_HOST}
@@ -110,7 +110,7 @@ services:
     container_name: loki
     restart: unless-stopped
     ports:
-      - "3100:3100"
+      - "${MONITORING_BIND_ADDRESS:-127.0.0.1}:3100:3100"
     volumes:
       - loki-data:/loki
     command: -config.file=/etc/loki/local-config.yaml

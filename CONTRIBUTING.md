@@ -19,7 +19,7 @@ Contributions must be compatible with [LICENSE](LICENSE). Preserve third-party c
 
 ## Local validation
 
-Run `bash scripts/ci.sh` from the repository root. The script is the authoritative local entry point for the checks and tool versions; inspect it and the checked-in dependency manifests before installing prerequisites. Use an isolated development environment.
+Run `bash scripts/ci.sh` from the repository root. The script is the authoritative local entry point for the checks and tool versions; inspect it and the checked-in dependency manifests before installing prerequisites. Use an isolated development environment. Docker CLI with Compose v2 or newer is required for the configuration regression tests; they use `docker compose config` with synthetic credentials and do not require a daemon or start containers.
 
 Automated tests use mocks or controlled fixtures where available. A passing unit test does not establish hardware safety. Describe any physical-device test separately, including firmware, configuration and expected rollback. Never run installation, deployment, Terraform apply or actuator commands merely to validate a documentation change.
 
