@@ -87,7 +87,19 @@ def test_required_credentials_reject_missing_or_empty(
 def test_unchanged_example_cannot_start_with_known_credentials(docker: str, tmp_path: Path) -> None:
     result = render(docker, tmp_path, {}, example=True)
     assert result.returncode != 0
-    assert "INFLUX_ADMIN_PASSWORD" in result.stderr
+    # Compose can validate services in any order; every credential is absent.
+    assert any(name in result.stderr for name in REQUIRED_SECRETS)
+    assert not result.stdout.strip()
+
+
+@pytest.mark.parametrize("name", REQUIRED_SECRETS)
+def test_example_requires_each_credential(docker: str, tmp_path: Path, name: str) -> None:
+    values = SYNTHETIC_ENV.copy()
+    del values[name]
+    result = render(docker, tmp_path, values, example=True)
+    assert result.returncode != 0
+    assert name in result.stderr
+    assert not result.stdout.strip()
 
 
 @pytest.mark.parametrize("example", (False, True), ids=("defaults", "filled-example"))
