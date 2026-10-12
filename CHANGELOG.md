@@ -13,6 +13,10 @@
 
 Set nonempty `INFLUX_ADMIN_PASSWORD`, `GRAFANA_ADMIN_PASSWORD` and `INFLUX_TOKEN` before recreating services. Existing stored credentials are not rotated by editing `.env`. Follow [the migration guide](docs/secure-deployment.md) to preserve data and arrange authenticated remote access.
 
+### Security
+
+Remove known default admin passwords and require explicit credentials before services start. Published ports default to loopback and anonymous Grafana viewing is disabled by default. Rotate any previously used default credentials on existing instances; these defaults do not replace TLS or host access controls.
+
 ## [1.3.5] - Development line
 
 ### Release overview
