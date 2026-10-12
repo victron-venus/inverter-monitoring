@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.6] - Development line
+
+### Changes
+
+- Reuse blended analysis series across filter candidates while preserving report output.
+- Require explicit monitoring credentials, bind published ports to loopback by default, and disable anonymous Grafana viewing unless explicitly enabled.
+- Update Werkzeug and the pinned uv/webhook tooling, enforce complete security scans, and verify deterministic release archives.
+- Fix release API status handling and refresh shared CI and release-helper analysis.
+
+### Upgrade
+
+Set nonempty `INFLUX_ADMIN_PASSWORD`, `GRAFANA_ADMIN_PASSWORD` and `INFLUX_TOKEN` before recreating services. Existing stored credentials are not rotated by editing `.env`. Follow [the migration guide](docs/secure-deployment.md) to preserve data and arrange authenticated remote access.
+
 ## [1.3.5] - Development line
 
 ### Release overview
