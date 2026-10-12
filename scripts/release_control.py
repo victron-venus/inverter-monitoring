@@ -187,11 +187,13 @@ def github_http_status(stderr: bytes) -> bytes | None:
     """Read an unambiguous CLI status, never a number embedded in its message."""
     # JSON errors end with (HTTP NNN); non-JSON errors start with HTTP NNN.
     # Conflicting diagnostics cannot prove either absence or retryability.
-    statuses = set(re.findall(
-        rb"(?m)^gh: HTTP (\d{3})(?::[^\r\n]*|[ \t]*)\r?$", stderr
-    ) + re.findall(
-        rb"(?m)^gh: [^\r\n]* \(HTTP (\d{3})\)\r?$", stderr
-    ))
+    for line in stderr.splitlines():
+        if line.startswith(b"gh: ") and len(re.findall(rb"\bHTTP \d{3}\b", line)) > 1:
+            return None
+    statuses = set(
+        re.findall(rb"(?m)^gh: HTTP (\d{3})(?::[^\r\n]*|[ \t]*)\r?$", stderr)
+        + re.findall(rb"(?m)^gh: [^\r\n]* \(HTTP (\d{3})\)\r?$", stderr)
+    )
     return next(iter(statuses)) if len(statuses) == 1 else None
 
 

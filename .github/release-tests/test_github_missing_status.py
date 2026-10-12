@@ -53,6 +53,9 @@ class MissingResourceStatusTests(unittest.TestCase):
     def test_embedded_or_conflicting_404_cannot_authorize_publication(self):
         for diagnostic in (
             b"gh: Request failed: HTTP 404 from upstream (HTTP 403)",
+            b"gh: Request failed: HTTP 403 from upstream (HTTP 404)",
+            b"gh: Request failed: HTTP 404 from upstream (HTTP 404)",
+            b"gh: HTTP 404: upstream returned HTTP 502",
             b"gh: HTTP 4040: invalid status",
             b"gh: HTTP 404suffix",
             b"other tool: HTTP 404",
@@ -82,7 +85,7 @@ class MissingResourceStatusTests(unittest.TestCase):
                     ):
                         operation()
                     self.assertFalse(error.exception.not_found)
-                    self.assertTrue(run.called)
+                    run.assert_called_once()
                     for call in run.call_args_list:
                         command = call.args[0]
                         method = (
