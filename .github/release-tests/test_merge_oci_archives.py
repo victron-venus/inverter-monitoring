@@ -10,7 +10,7 @@ import hashlib
 import importlib.util
 import io
 import json
-import subprocess
+import subprocess  # nosec B404 - local CLI fixtures; no shell
 import sys
 import tarfile
 import tempfile
@@ -684,9 +684,9 @@ class MergeTest(unittest.TestCase):
         ]
         for platform, path in inputs.items():
             arguments += ["--input", f"{platform}={path}"]
-        result = subprocess.run(arguments, capture_output=True, text=True, check=True)
+        result = subprocess.run(arguments, capture_output=True, text=True, check=True)  # nosec B603 - explicit interpreter and local CLI fixture argv
         self.assertEqual(json.loads(result.stdout)["revision"], REVISION)
-        duplicate = subprocess.run(
+        duplicate = subprocess.run(  # nosec B603 - explicit interpreter and duplicate-input fixture argv
             arguments + ["--input", f"linux/amd64={inputs['linux/amd64']}"],
             capture_output=True,
             text=True,
@@ -716,7 +716,7 @@ class MergeTest(unittest.TestCase):
         ]
         for platform, path in inputs.items():
             arguments.extend(["--input", f"{platform}={path}"])
-        return subprocess.run(
+        return subprocess.run(  # nosec B603 - explicit interpreter and local CLI fixture argv
             arguments,
             capture_output=True,
             text=True,

@@ -8,7 +8,7 @@
 import io
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 - mocked publication results only
 import sys
 import tempfile
 import unittest

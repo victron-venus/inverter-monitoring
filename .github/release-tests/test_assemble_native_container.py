@@ -11,7 +11,7 @@ import hashlib
 import io
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 - fixture-only commands; no shell
 import sys
 import tarfile
 import tempfile
@@ -113,7 +113,7 @@ class NativeReceiptTests(unittest.TestCase):
             self.make_native(platform)
 
     def command(self, *args):
-        return subprocess.check_output(args, cwd=self.root, text=True)
+        return subprocess.check_output(args, cwd=self.root, text=True)  # nosec B603 - explicit fixture argv in a temporary repository
 
     def write(self, name, value):
         path = self.root / name
