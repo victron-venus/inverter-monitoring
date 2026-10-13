@@ -1,20 +1,32 @@
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 import atheris
+
+# Typeshed exposes the instrumentation APIs through their implementation modules.
+if TYPE_CHECKING:
+    from atheris.import_hook import instrument_imports
+    from atheris.instrument_bytecode import instrument_func
+else:
+    instrument_imports = atheris.instrument_imports
+    instrument_func = atheris.instrument_func
 
 ROOT = Path(__file__).resolve().parents[1]
 import importlib.util
 
 spec = importlib.util.spec_from_file_location("fuzz_webhook_runtime", ROOT / "webhook/server.py")
+if spec is None or spec.loader is None:
+    raise RuntimeError("Cannot load the local webhook module")
 runtime = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = runtime
-with atheris.instrument_imports():
+with instrument_imports():
     spec.loader.exec_module(runtime)
-runtime.WEBHOOK_SECRET = "synthetic-fuzz-key"
+# This isolated module uses only a public synthetic HMAC fixture.
+runtime.__dict__["WEBHOOK_SECRET"] = "synthetic-fuzz-key"  # nosec B105
 
-with atheris.instrument_imports():
-    from fuzz_webhook_runtime import verify_signature
+verify_signature = cast(Callable[[bytes, str], bool], runtime.verify_signature)
 
 
 def test_one_input(data: bytes) -> None:
@@ -28,5 +40,5 @@ def test_one_input(data: bytes) -> None:
 
 
 if __name__ == "__main__":
-    atheris.Setup(sys.argv, atheris.instrument_func(test_one_input))
+    atheris.Setup(sys.argv, instrument_func(test_one_input))
     atheris.Fuzz()
