@@ -1,5 +1,7 @@
 # Inverter Monitoring Stack
 
+[![Fuzzing: RC only](https://img.shields.io/badge/Fuzzing-RC%20only-blue)](docs/fuzzing.md)
+
 [![CI](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub last commit](https://img.shields.io/github/last-commit/victron-venus/inverter-monitoring)](https://github.com/victron-venus/inverter-monitoring/commits/main)
@@ -394,3 +396,9 @@ For issues specific to:
 See [CONTRIBUTING.md](CONTRIBUTING.md) for reports, development checks and pull requests,
 [SECURITY.md](SECURITY.md) for private vulnerability reporting and deployment trust boundaries,
 and the [OpenSSF evidence index](docs/openssf-evidence.md) for assessment references and remaining verification.
+
+## Release-candidate fuzzing
+
+The production GitHub webhook signature verifier receives synthetic bodies and signature strings under a fixed test-only key. Correct signatures must validate, altered bodies and malformed signatures must fail. No route is called, subprocess started, deployment triggered or Cerbo connection attempted.
+
+[RC-only fuzzing policy, local reproduction and failure handling](docs/fuzzing.md).

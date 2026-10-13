@@ -34,3 +34,9 @@ release-assets/
 
 # Versioned human-readable release notes.
 !CHANGELOG.md
+
+# Isolated RC fuzz runtime and local diagnostic inputs
+.fuzz-venv/
+crash-*
+timeout-*
+oom-*
