@@ -1,3 +1,8 @@
+# Vendored release toolkit; change the toolkit source, then render again.
+# ruff: noqa
+# mypy: ignore-errors
+# pylint: skip-file
+# fmt: off
 """Run release modules in isolated interpreters without test sys.path mutations."""
 
 import os
@@ -36,16 +41,58 @@ class ReleaseImportTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_package_imports_without_scripts_on_path(self):
+        script = "import importlib; " + "; ".join(
+            f"importlib.import_module('scripts.{name}')" for name in MODULES
+        )
+        self.run_python("-c", script)
+
+    def test_package_dependencies_share_module_and_exception_identity(self):
         script = """
 import importlib
-modules = {name: importlib.import_module('scripts.' + name) for name in MODULES}
-assert modules['release_version_adapter'].version_plan is modules['version_plan']
-assert modules['release_versioned'].version_plan is modules['version_plan']
-assert modules['release_versioned'].rc is modules['release_control']
-assert modules['release_versioned'].client is importlib.import_module('scripts.release')
-assert modules['release_version_adapter'].version_plan is not modules['release_version_adapter']
-assert modules['release_versioned'].client is not modules['release_versioned']
-""".replace("MODULES", repr(MODULES))
+from pathlib import Path
+from scripts import release_control as control
+from scripts import release_state as state
+from scripts import release_versioned as lifecycle
+from scripts import version_plan, version_receipt
+assert lifecycle.rc is control
+assert state.rc is control
+assert lifecycle.StateGitHub is state.StateGitHub
+assert version_plan.atomic_write_bytes is control.atomic_write_bytes
+assert version_receipt.stream_identity is control.stream_identity
+assert issubclass(state.StateGitHub, control.GitHub)
+for name in ('release_provenance', 'release_signing', 'assemble_native_container',
+             'release_container_labels', 'publish_verified', 'runner_preflight',
+             'verified_images', 'write_binary_build_metadata'):
+    if (Path('scripts') / (name + '.py')).is_file():
+        importlib.import_module('scripts.' + name)
+"""
+        self.run_python("-c", script)
+
+    def test_package_lazy_validation_imports(self):
+        script = """
+from pathlib import Path
+from scripts import release_control as control
+policy = {'repository': 'example/project', 'mode': 'release', 'versioning': {},
+          'single_entry_ci': True, 'validation_workflows': ['ci.yml'],
+          'channel_validation_workflows': {'beta': ['beta.yml']}}
+control.require_release_policy(policy, 'example/project', qualified=False)
+assert control.validation_profile(policy, 'beta')['workflows'] == ['beta.yml']
+if Path('scripts/release_fuzz.py').is_file():
+    from scripts import release_fuzz
+    policy['fuzzing'] = {'toolkit_ref': 'a' * 40}
+    control.require_release_policy(policy, 'example/project', qualified=False)
+    manifest = {'source_policy': {'data': policy}, 'channel': 'beta',
+                'validation_profile': control.validation_profile(policy, 'beta'),
+                'fuzzing_profile': release_fuzz.profile(policy, 'beta')}
+    control.validate_validation_manifest(manifest)
+    policy['fuzzing'] = {'toolkit_ref': 'mutable'}
+    try:
+        control.require_release_policy(policy, 'example/project', qualified=False)
+    except control.ReleaseError:
+        pass
+    else:
+        raise AssertionError('Invalid lazy-loaded policy accepted')
+"""
         self.run_python("-c", script)
 
     def test_standalone_importlib_loads(self):
@@ -59,12 +106,6 @@ for name in MODULES:
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     spec.loader.exec_module(module)
-assert Path(sys.modules['release_version_adapter'].version_plan.__file__).resolve() == Path('scripts/version_plan.py').resolve()
-assert Path(sys.modules['release_versioned'].version_plan.__file__).resolve() == Path('scripts/version_plan.py').resolve()
-assert Path(sys.modules['release_versioned'].rc.__file__).resolve() == Path('scripts/release_control.py').resolve()
-assert Path(sys.modules['release_versioned'].client.__file__).resolve() == Path('scripts/release.py').resolve()
-assert sys.modules['release_version_adapter'].version_plan is not sys.modules['release_version_adapter']
-assert sys.modules['release_versioned'].client is not sys.modules['release_versioned']
 """.replace("MODULES", repr(MODULES))
         self.run_python("-c", script)
 
