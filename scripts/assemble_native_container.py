@@ -13,7 +13,7 @@ import hashlib
 import os
 import re
 import stat
-import subprocess
+import subprocess  # nosec B404 - fixed Git command; no shell
 import tempfile
 from contextlib import ExitStack, suppress
 from pathlib import Path
@@ -261,7 +261,7 @@ def assemble(root: Path, directories: dict[str, Path], output: Path, evidence: P
     evidence = version_receipt.confined_cli_path(root, evidence, "new")
     require(output != evidence, "OCI and evidence destinations must differ")
     policy = document(root / ".release-policy.json")
-    source = subprocess.check_output(
+    source = subprocess.check_output(  # nosec B603, B607 - fixed Git command in the release checkout
         ["git", "rev-parse", "HEAD"], cwd=root, text=True
     ).strip()
     plan = version_plan.validate_plan(
