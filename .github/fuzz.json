@@ -29,7 +29,22 @@
         "-max_len=4096"
       ],
       "seconds": 60,
-      "corpus": "fuzz/corpus/signature"
+      "corpus": "fuzz/corpus/signature",
+      "instrumentation": [
+        {
+          "module": "webhook.server",
+          "functions": [
+            "verify_signature"
+          ]
+        }
+      ]
     }
+  ],
+  "preflight-paths": [
+    ".github/requirements-fuzz.in",
+    "fuzz",
+    "pyproject.toml",
+    "uv.lock",
+    "webhook"
   ]
 }
