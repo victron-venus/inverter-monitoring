@@ -10,7 +10,8 @@ requires-python = ">=3.11"
 dependencies = ["flask>=3.0", "gunicorn==26.0.0"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov"]
+dev = [
+    "types-atheris>=3.1.0.20260630","pytest", "pytest-cov"]
 test = ["pytest", "pytest-cov"]
 
 # Not an installable distribution: repo holds deployment scripts, Grafana

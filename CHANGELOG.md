@@ -2,6 +2,10 @@
 
 ## [1.3.6] - Development line
 
+### Release candidate validation
+
+- Require bounded fuzzing on public release candidates, with source-bound reports and retained diagnostics; beta and ordinary CI do not run mutation campaigns.
+
 ### Changes
 
 - Reuse blended analysis series across filter candidates while preserving report output.
