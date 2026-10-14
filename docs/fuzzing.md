@@ -10,6 +10,16 @@ only a standard-library JSON decoder. Expected validation rejections are handled
 at their documented boundary; assertion failures and unexpected exceptions fail
 the run. Seeds contain no credentials, device identities or captured user data.
 
+The harness imports `webhook.server` through Python's normal import machinery
+inside Atheris's instrumentation context. Directly executing a file loader would
+bypass Atheris's import hook even while the callback's execution counter grows.
+Before accepting any input, the harness checks that the production
+`verify_signature` function is already instrumented: the pinned Atheris 3.1.0
+public `instrument_func` API must leave its code object unchanged. A missing
+production instrumentation step fails startup. The fast regression test also
+checks this import route and fail-closed behavior in a fresh Python process;
+the actual instrumented campaign remains RC-only.
+
 ## When it runs and what it costs
 
 The canonical release pipeline calls the reusable fuzz workflow in

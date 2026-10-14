@@ -5,6 +5,7 @@
 ### Release candidate validation
 
 - Require bounded fuzzing on public release candidates, with source-bound reports and retained diagnostics; beta and ordinary CI do not run mutation campaigns.
+- Instrument the production webhook signature verifier through the normal import hook and reject RC fuzz startup if production instrumentation is missing.
 
 ### Changes
 
