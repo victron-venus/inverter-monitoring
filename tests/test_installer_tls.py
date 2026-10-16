@@ -180,7 +180,14 @@ def test_real_installer_enforces_strong_chain(
     with endpoint(tls_chains / weak, tls, payload) as (url, requests):
         # Establish that even the deliberately weak chain is otherwise trusted/name-valid.
         command(
-            openssl_curl, "--ciphers", "DEFAULT:@SECLEVEL=0", "--fail", "--silent", url, env=env
+            openssl_curl,
+            "--disable",
+            "--ciphers",
+            "DEFAULT:@SECLEVEL=0",
+            "--fail",
+            "--silent",
+            url,
+            env=env,
         )
         assert len(requests) == 1
         requests.clear()
