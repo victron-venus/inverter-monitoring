@@ -19,8 +19,10 @@ time digest comparison. Generate independent secrets with `openssl rand -hex 32`
 32 random bytes provide 256 bits before hexadecimal encoding. The service rejects
 keys shorter than 32 UTF-8 bytes. Length alone cannot prove randomness, so a long
 human-selected phrase is not an acceptable substitute. The webhook does not
-store password verifiers. Grafana/InfluxDB own their account databases; their
-password-storage behavior is not implemented by this repository.
+store password verifiers. The supplied Compose stack does create Grafana and
+InfluxDB accounts, so its [upstream password storage](password-storage.md) is
+included in this assessment. The two images are pinned to reviewed versions and
+manifest digests; their databases remain protected deployment data.
 
 ## Deployment authorization and transport
 
@@ -70,7 +72,7 @@ The Python coverage report does not measure Grafana dashboards, shell, external
 containers or electrical behavior. [CHANGELOG](../CHANGELOG.md) records delivered
 changes; a passing CI run is not target-device acceptance.
 
-## Roadmap
+## Roadmap: October 2026–October 2027
 
 Next steps are signed/source-pinned optional deployment end to end, broader
 container integration tests and explicit review of all externally supplied
@@ -79,3 +81,11 @@ threshold. Establish an independent recovery arrangement; there is currently
 no backup maintainer or one-week access recovery, as stated in
 [governance](../GOVERNANCE.md). A complete security assurance case, independently
 reproduced identical artifacts and comprehensive accessibility are not claimed.
+
+During this period, the project will not enable unattended deployment by
+default, treat container restarts as source-version verification, or claim
+electrical or device safety from synthetic monitoring tests.
+
+The [README](../README.md) links the live OpenSSF badge. Update achievement
+links there within 48 hours of public recognition; the changelog records
+software changes rather than the badge level.
