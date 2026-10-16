@@ -20,8 +20,8 @@ Grafana creates a random per-user salt and stores a PBKDF2-HMAC-SHA-256 password
 verifier using 10,000 iterations. The salt is generated through Go's
 cryptographic random generator. This is a description of upstream behavior,
 not a claim that its work factor meets every current password-hardening guide.
-See the reviewed [user creation code](https://github.com/grafana/grafana/blob/6259becc8e86265fdf35a73e08eef5bd92b5cd73/pkg/services/user/userimpl/legacy_user.go)
-and [password encoding and randomness](https://github.com/grafana/grafana/blob/6259becc8e86265fdf35a73e08eef5bd92b5cd73/pkg/util/encoding.go).
+See the reviewed [user creation code](https://github.com/grafana/grafana/blob/af4a33e3786594ad72f72d97e6744010330c2977/pkg/services/user/userimpl/legacy_user.go)
+and [password encoding and randomness](https://github.com/grafana/grafana/blob/af4a33e3786594ad72f72d97e6744010330c2977/pkg/util/encoding.go).
 
 InfluxDB stores a bcrypt password verifier using the Go bcrypt default cost
 of 10. Bcrypt generates a fresh 16-byte random salt per verifier and embeds it
