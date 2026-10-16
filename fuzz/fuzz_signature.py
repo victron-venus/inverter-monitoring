@@ -15,7 +15,7 @@ else:
     instrument_func = atheris.instrument_func
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_WEBHOOK_SECRET = "synthetic-fuzz-key"  # nosec B105 - synthetic test-only key
+TEST_WEBHOOK_SECRET = "synthetic-fuzz-key-not-a-production-secret"  # nosec B105 - synthetic test-only key
 
 sys.path.insert(0, str(ROOT))
 with instrument_imports():

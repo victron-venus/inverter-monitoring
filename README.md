@@ -1,5 +1,7 @@
 # Inverter Monitoring Stack
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15556/badge)](https://www.bestpractices.dev/en/projects/15556)
+
 [![Fuzzing: RC only](https://img.shields.io/badge/Fuzzing-RC%20only-blue)](docs/fuzzing.md)
 
 [![CI](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml)
@@ -402,3 +404,7 @@ and the [OpenSSF evidence index](docs/openssf-evidence.md) for assessment refere
 The production GitHub webhook signature verifier receives synthetic bodies and signature strings under a fixed test-only key. Correct signatures must validate, altered bodies and malformed signatures must fail. No route is called, subprocess started, deployment triggered or Cerbo connection attempted.
 
 [RC-only fuzzing policy, local reproduction and failure handling](docs/fuzzing.md).
+
+## Project practices
+
+See [architecture, security and roadmap](docs/project-assurance.md), [governance](GOVERNANCE.md), [contributing](CONTRIBUTING.md), [conduct](CODE_OF_CONDUCT.md) and [security reporting](SECURITY.md). Optional deployment requires the [documented secret and SSH prerequisites](docs/secure-deployment.md).

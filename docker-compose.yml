@@ -16,6 +16,7 @@ services:
     environment:
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
       - AUTO_DEPLOY_STABLE_RELEASES=${AUTO_DEPLOY_STABLE_RELEASES:-false}
+      - MONITORING_TLS_SECURITY_LEVEL=${MONITORING_TLS_SECURITY_LEVEL:-2}
       - DEPLOY_SCRIPT=/app/deploy-local.sh
       - CERBO_HOST=Cerbo
     group_add:
@@ -35,7 +36,7 @@ services:
   # ==========================================================================
 
   influxdb:
-    image: influxdb:2.7
+    image: influxdb:2.7.12@sha256:b8d940ca9376f85118260f5b6bd236b8a00b1749c3350c5578d4cde8e27f31f2
     container_name: influxdb
     restart: unless-stopped
     ports:
@@ -59,7 +60,7 @@ services:
       retries: 3
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.2.4@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
     container_name: grafana
     restart: unless-stopped
     ports:

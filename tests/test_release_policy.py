@@ -15,7 +15,7 @@ from webhook import server
 @pytest.fixture
 def delivery(monkeypatch):
     # Synthetic test credentials/sentinels; not valid external-service secrets.
-    secret = "release-policy-test-secret"  # nosec B105
+    secret = "release-policy-test-secret-not-for-production"  # nosec B105
     monkeypatch.setattr(server, "WEBHOOK_SECRET", secret)
     monkeypatch.setattr(server, "AUTO_DEPLOY_STABLE_RELEASES", False)
     fail = mock.Mock(side_effect=AssertionError("Tests must not run deployment commands"))
