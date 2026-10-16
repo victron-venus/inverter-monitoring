@@ -81,17 +81,20 @@ def test_verify_rejects_when_no_secret(monkeypatch):
 
 
 def test_verify_rejects_missing_signature(monkeypatch):
-    monkeypatch.setattr(server, "WEBHOOK_SECRET", "s3cret")
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", "disposable-test-secret-value-32-bytes")
     assert server.verify_signature(PAYLOAD, "") is False
 
 
 def test_verify_accepts_valid_signature(monkeypatch):
-    monkeypatch.setattr(server, "WEBHOOK_SECRET", "s3cret")
-    assert server.verify_signature(PAYLOAD, signed(PAYLOAD, "s3cret")) is True
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", "disposable-test-secret-value-32-bytes")
+    assert (
+        server.verify_signature(PAYLOAD, signed(PAYLOAD, "disposable-test-secret-value-32-bytes"))
+        is True
+    )
 
 
 def test_verify_rejects_bad_signature(monkeypatch):
-    monkeypatch.setattr(server, "WEBHOOK_SECRET", "s3cret")
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", "disposable-test-secret-value-32-bytes")
     assert server.verify_signature(PAYLOAD, "sha256=" + "0" * 64) is False
 
 
@@ -162,7 +165,7 @@ def test_update_control_success(monkeypatch):
     # Two commands: install + version verification.
     assert len(calls) == 2
     assert all(c[0] == "ssh" for c in calls)
-    assert "refs/tags/v1.2.3" in calls[0][2]
+    assert "refs/tags/v1.2.3" in calls[0][-1]
 
 
 def test_update_control_failure_returns_generic_message(monkeypatch):
@@ -215,7 +218,7 @@ def fake_completed(returncode=0, stdout="", stderr=""):
 def push_payload(branch="main", repo="inverter-monitoring"):
     return {
         "ref": f"refs/heads/{branch}",
-        "repository": {"name": repo},
+        "repository": {"name": repo, "full_name": f"victron-venus/{repo}"},
         "pusher": {"name": "ci-bot"},
         "commits": [{"id": "abc"}],
     }
@@ -309,7 +312,7 @@ def test_body_changed_after_signing_rejects_delivery(client, monkeypatch):
 
 
 def test_webhook_rejects_bad_signature(client, monkeypatch):
-    monkeypatch.setattr(server, "WEBHOOK_SECRET", "s3cret")
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", "disposable-test-secret-value-32-bytes")
     resp = client.post("/webhook", data=PAYLOAD, headers={"X-GitHub-Event": "push"})
     assert resp.status_code == 401
 
@@ -345,7 +348,7 @@ def release_payload(action="published", tag="v1.0.0", repo="inverter-control"):
     return {
         "action": action,
         "release": {"tag_name": tag, "prerelease": False, "draft": False},
-        "repository": {"name": repo},
+        "repository": {"name": repo, "full_name": f"victron-venus/{repo}"},
     }
 
 
@@ -466,3 +469,82 @@ def test_dashboard_restart_socket_failure(monkeypatch, tmp_path):
 
     monkeypatch.setattr(server, "run_command", isolated_run)
     assert server.update_inverter_dashboard("v2.0.0") == (False, "Failed: see server logs")
+
+
+@pytest.mark.parametrize("secret", ["", "short", "a" * 31])
+def test_short_secret_rejects_even_correct_signature(client, monkeypatch, secret):
+    monkeypatch.setattr(server, "WEBHOOK_SECRET", secret)
+    response = client.post(
+        "/webhook",
+        data=PAYLOAD,
+        content_type="application/json",
+        headers={"X-GitHub-Event": "release", "X-Hub-Signature-256": signed(PAYLOAD, secret)},
+    )
+    assert response.status_code == 503
+    assert not server.verify_signature(PAYLOAD, signed(PAYLOAD, secret))
+
+
+@pytest.mark.parametrize("payload", [None, [], "release", 42])
+def test_authenticated_non_object_is_rejected(client, signed_requests, payload):
+    assert (
+        client.post("/webhook", json=payload, headers={"X-GitHub-Event": "release"}).status_code
+        == 400
+    )
+
+
+@pytest.mark.parametrize(
+    "repository",
+    [
+        None,
+        [],
+        {},
+        {"name": "inverter-control"},
+        {"name": "inverter-control", "full_name": "untrusted/inverter-control"},
+    ],
+)
+def test_release_requires_exact_repository_identity(
+    client, signed_requests, monkeypatch, repository
+):
+    monkeypatch.setattr(server, "AUTO_DEPLOY_STABLE_RELEASES", True)
+    deploy = Mock(side_effect=AssertionError("Untrusted repository reached deployment"))
+    monkeypatch.setattr(server, "update_inverter_control", deploy)
+    payload = release_payload()
+    payload["repository"] = repository
+    response = client.post("/webhook", json=payload, headers={"X-GitHub-Event": "release"})
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "ignored"
+    deploy.assert_not_called()
+
+
+def test_control_transfer_failure_does_not_extract_or_run_installer(monkeypatch, tmp_path):
+    """Run the actual generated remote shell with only harmless local fake tools."""
+    captured = []
+    monkeypatch.setattr(
+        server, "run_command", lambda cmd, timeout=300: (captured.append(cmd) or True, "")
+    )
+    assert server.update_inverter_control("v1.2.3")[0]
+    command = captured[0]
+    assert "StrictHostKeyChecking=yes" in command
+    assert "HostKeyAlgorithms=ssh-ed25519" in command
+    assert "BatchMode=yes" in command
+    assert command[-2] == server.CERBO_HOST
+    remote = command[-1].replace(
+        "/data/.inverter-control-deploy.XXXXXX", str(tmp_path / "download.XXXXXX")
+    )
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    (binary / "curl").write_text("#!/bin/sh\nexit 22\n")
+    (binary / "tar").write_text(f"#!/bin/sh\ntouch '{tmp_path / 'extracted'}'\nexit 0\n")
+    for path in binary.iterdir():
+        path.chmod(0o700)
+    import os
+
+    # Execute the application-generated script using isolated fake tools and paths.
+    result = subprocess.run(  # nosec B603
+        ["/bin/sh", "-c", remote],
+        env={**os.environ, "PATH": str(binary) + os.pathsep + os.environ["PATH"]},
+        check=False,
+    )
+    assert result.returncode == 22
+    assert not (tmp_path / "extracted").exists()
+    assert not list(tmp_path.glob("download.*"))

@@ -402,3 +402,7 @@ and the [OpenSSF evidence index](docs/openssf-evidence.md) for assessment refere
 The production GitHub webhook signature verifier receives synthetic bodies and signature strings under a fixed test-only key. Correct signatures must validate, altered bodies and malformed signatures must fail. No route is called, subprocess started, deployment triggered or Cerbo connection attempted.
 
 [RC-only fuzzing policy, local reproduction and failure handling](docs/fuzzing.md).
+
+## Project practices
+
+See [architecture, security and roadmap](docs/project-assurance.md), [governance](GOVERNANCE.md), [contributing](CONTRIBUTING.md), [conduct](CODE_OF_CONDUCT.md) and [security reporting](SECURITY.md). Optional deployment requires the [documented secret and SSH prerequisites](docs/secure-deployment.md).

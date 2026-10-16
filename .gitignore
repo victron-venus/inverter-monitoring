@@ -6,6 +6,7 @@ data/
 logs/
 commit.txt
 C*.md
+!CODE_OF_CONDUCT.md
 __pycache__/
 *.bak
 *.tmp

@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- Reject short webhook secrets and malformed authenticated payloads, and require the full allowed GitHub repository identity before deployment.
+- Require verified Ed25519 SSH identities and forward-secret authenticated encryption for optional device deployment.
+- Finish HTTPS downloads before extracting or running installers, with private temporary staging and cleanup.
+- Document governance, security assumptions and remaining assurance work.
+
+### Upgrade
+
+Rotate short webhook secrets on both sides using `openssl rand -hex 32`. Provision verified Ed25519 SSH host/client keys before enabling optional deployment. Existing monitoring data and volumes are unchanged.
+
+### Security
+
+Automatic deployment stays disabled by default. Transport verification and transfer failure handling are strengthened; source downloads still trust the configured GitHub repository and remote TLS trust store. No target deployment or acceptance is implied.
+
 ## [1.3.7] - 2026-10-14
 
 ### Changed

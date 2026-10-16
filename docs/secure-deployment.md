@@ -69,3 +69,20 @@ Shell environment values override `.env`, so validate using the same environment
 as the planned Compose invocation. The pinned or floating image choices are
 unchanged by this credentials/access update; it does not certify every image's
 password hashing, TLS configuration or future release.
+
+## Webhook authentication and SSH prerequisites
+
+The optional listener now rejects a `WEBHOOK_SECRET` shorter than 32 UTF-8 bytes.
+Generate a new independent value with `openssl rand -hex 32`, store it privately,
+and update both GitHub's webhook secret and the service configuration together.
+A long predictable phrase is still weak: the length check cannot measure entropy.
+Existing short secrets must be rotated before deliveries will be accepted.
+
+Automatic deployment additionally checks GitHub's complete repository identity,
+so a different organization with the same repository name is rejected. The SSH
+path requires a previously verified Ed25519 host key in `known_hosts`, an
+Ed25519 client identity and Curve25519/AEAD support. It never accepts a new host
+key interactively or falls back to password authentication. Provision and verify
+these prerequisites before enabling `AUTO_DEPLOY_STABLE_RELEASES`; see the
+[security and architecture evidence](project-assurance.md). No secrets, SSH keys,
+live containers or devices are changed automatically by this source update.

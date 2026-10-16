@@ -33,6 +33,7 @@ DEPLOY_SCRIPT = os.environ.get("DEPLOY_SCRIPT", "/app/deploy-local.sh")
 AUTO_DEPLOY_STABLE_RELEASES = (
     os.environ.get("AUTO_DEPLOY_STABLE_RELEASES", "false").lower() == "true"
 )
+MIN_SECRET_BYTES = 32
 STABLE_TAG_PATTERN = re.compile(r"v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", re.ASCII)
 
 # SSH config for Cerbo (mounted from host or configured in container)
@@ -44,9 +45,14 @@ CERBO_HOST = os.environ.get("CERBO_HOST", "Cerbo")
 TAG_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
 
 
+def configured_secret() -> bool:
+    """Reject absent/trivially short keys; operators must still generate random keys."""
+    return len(WEBHOOK_SECRET.encode("utf-8")) >= MIN_SECRET_BYTES
+
+
 def verify_signature(payload: bytes, signature: str) -> bool:
     """Verify GitHub webhook signature"""
-    if not WEBHOOK_SECRET:
+    if not configured_secret():
         return False
 
     if not re.fullmatch(r"sha256=[0-9a-f]{64}", signature):
@@ -108,12 +114,12 @@ def update_inverter_control(tag: str) -> tuple:
         # treated as success - curl -sL would return exit 0 on HTTP 404).
         (
             "set -e; "
-            "DEPLOY=/data/.inverter-control-deploy; "
-            'rm -rf "$DEPLOY"; mkdir -p "$DEPLOY"; '
-            f"curl -fsSL 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
-            '| tar -xz -C "$DEPLOY" --strip-components=1; '
-            'sh "$DEPLOY/update.sh"; '
-            'rm -rf "$DEPLOY"'
+            "DEPLOY=$(mktemp -d /data/.inverter-control-deploy.XXXXXX); "
+            "trap 'rm -rf \"$DEPLOY\"' EXIT HUP INT TERM; "
+            f"curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
+            '-o "$DEPLOY/source.tar.gz"; '
+            'mkdir "$DEPLOY/source"; tar -xzf "$DEPLOY/source.tar.gz" -C "$DEPLOY/source" --strip-components=1; '
+            'sh "$DEPLOY/source/update.sh"'
         ),
         # Verify the installed version matches the release before reporting
         # success, so a stale/partial install is treated as a failure.
@@ -121,7 +127,26 @@ def update_inverter_control(tag: str) -> tuple:
     ]
 
     for cmd in commands:
-        success, output = run_command(["ssh", CERBO_HOST, cmd])
+        success, output = run_command(
+            [
+                "ssh",
+                "-o",
+                "BatchMode=yes",
+                "-o",
+                "StrictHostKeyChecking=yes",
+                "-o",
+                "HostKeyAlgorithms=ssh-ed25519",
+                "-o",
+                "PubkeyAcceptedAlgorithms=ssh-ed25519",
+                "-o",
+                "KexAlgorithms=curve25519-sha256",
+                "-o",
+                "Ciphers=chacha20-poly1305@openssh.com,aes256-gcm@openssh.com",
+                "--",
+                CERBO_HOST,
+                cmd,
+            ]
+        )
         if not success:
             logger.warning("Control update failed: %s", sanitize_for_logging(output))
             # Do not echo remote command output back to the caller
@@ -188,8 +213,8 @@ def health():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """GitHub webhook endpoint"""
-    if not WEBHOOK_SECRET:
-        logger.error("Webhook disabled: WEBHOOK_SECRET is not configured")
+    if not configured_secret():
+        logger.error("Webhook disabled: configure a random secret of at least 32 bytes")
         return jsonify({"error": "Webhook secret is not configured"}), 503
 
     # GitHub authenticates machine deliveries with a body HMAC, not browser cookies.
@@ -199,16 +224,20 @@ def webhook():
         logger.warning("Invalid webhook signature")
         return jsonify({"error": "Invalid signature"}), 401
 
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"error": "JSON object required"}), 400
+
     # Parse event
     event = request.headers.get("X-GitHub-Event", "")
 
     if event == "release":
         logger.info("Received release event")
-        return handle_release_event(request.json)
+        return handle_release_event(payload)
 
     if event == "push":
         logger.info("Received push event")
-        return handle_push_event(request.json)
+        return handle_push_event(payload)
 
     # Unknown event names are untrusted; keep them out of log records entirely.
     logger.info("Ignoring unsupported GitHub event")
@@ -234,8 +263,8 @@ def handle_release_event(payload: dict):
     """Handle GitHub release event"""
     action = payload.get("action", "")
     if action != "published":
-        logger.info(f"Ignoring release action: {sanitize_for_logging(action)}")
-        return jsonify({"status": "ignored", "action": action})
+        logger.info("Ignoring unpublished release action")
+        return jsonify({"status": "ignored", "reason": "published release required"})
 
     release = payload.get("release")
     if not isinstance(release, dict):
@@ -255,8 +284,14 @@ def handle_release_event(payload: dict):
     if not AUTO_DEPLOY_STABLE_RELEASES:
         return jsonify({"status": "ignored", "reason": "automatic stable deployment disabled"})
 
-    repo = payload.get("repository", {}).get("name", "")
-    logger.info(f"Processing release {sanitize_for_logging(tag)} for {sanitize_for_logging(repo)}")
+    repository = payload.get("repository")
+    if not isinstance(repository, dict):
+        return jsonify({"status": "ignored", "reason": "repository metadata required"})
+    full_name = repository.get("full_name")
+    if full_name not in ("victron-venus/inverter-control", "victron-venus/inverter-dashboard"):
+        return jsonify({"status": "ignored", "reason": "repository not allowed"})
+    repo = full_name.rsplit("/", 1)[1]
+    logger.info("Processing release %s for %s", sanitize_for_logging(tag), repo)
 
     results = {}
 
