@@ -1,5 +1,7 @@
 # Inverter Monitoring Stack
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15556/badge)](https://www.bestpractices.dev/en/projects/15556)
+
 [![Fuzzing: RC only](https://img.shields.io/badge/Fuzzing-RC%20only-blue)](docs/fuzzing.md)
 
 [![CI](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/victron-venus/inverter-monitoring/actions/workflows/ci.yml)

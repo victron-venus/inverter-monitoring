@@ -40,7 +40,14 @@ forward secrecy. The remote installer is downloaded completely over verified
 HTTPS before extraction in a fresh private temporary directory. Download failure
 prevents extraction/execution and cleans up the directory. HTTPS is required on
 redirects; GitHub release-source trust and the remote curl trust store remain
-operator responsibilities. This is not a signature check for the extracted
+operator responsibilities. Select `MONITORING_TLS_SECURITY_LEVEL=3` for the
+complete strong-key installer profile: it verifies the remote curl uses OpenSSL
+and applies `DEFAULT:@SECLEVEL=3` to certificate checks for TLS 1.2 and 1.3.
+That profile disables ambient proxies and curl configuration-file overrides.
+OpenSSL level 3 requires at least 128-bit estimated strength (RSA/DH 3072 or
+EC 256), rejecting a 2047-bit RSA leaf, intermediate or root. Unsupported
+backends and invalid options fail before download; level 2 retains the original
+device compatibility behavior. This is not a signature check for the extracted
 installer. Deployment grants significant authority to the chosen upstream code.
 
 Keep `AUTO_DEPLOY_STABLE_RELEASES=false` unless those prerequisites and a target

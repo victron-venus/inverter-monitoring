@@ -5,6 +5,7 @@
 - Reject short webhook secrets and malformed authenticated payloads, and require the full allowed GitHub repository identity before deployment.
 - Require verified Ed25519 SSH identities and forward-secret authenticated encryption for optional device deployment.
 - Finish HTTPS downloads before extracting or running installers, with private temporary staging and cleanup.
+- Add an explicit OpenSSL level-3 installer profile for at least 128-bit TLS certificate strength; preserve default device compatibility.
 - Document governance, security assumptions and remaining assurance work.
 
 ### Upgrade

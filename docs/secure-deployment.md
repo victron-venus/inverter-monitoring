@@ -86,3 +86,11 @@ key interactively or falls back to password authentication. Provision and verify
 these prerequisites before enabling `AUTO_DEPLOY_STABLE_RELEASES`; see the
 [security and architecture evidence](project-assurance.md). No secrets, SSH keys,
 live containers or devices are changed automatically by this source update.
+
+For optional installation over the complete strong-key profile, set
+`MONITORING_TLS_SECURITY_LEVEL=3`. The remote device must provide OpenSSL-backed
+curl; this mode requires RSA/DH 3072 or EC 256 certificate strength and may reject
+otherwise valid legacy RSA-2048 peers. It fails on unsupported TLS backends and
+does not disable hostname or trust checks. Keep the default `2` only when the
+legacy device compatibility profile is required. This setting does not configure
+an external reverse proxy or the database containers.

@@ -34,6 +34,7 @@ AUTO_DEPLOY_STABLE_RELEASES = (
     os.environ.get("AUTO_DEPLOY_STABLE_RELEASES", "false").lower() == "true"
 )
 MIN_SECRET_BYTES = 32
+TLS_SECURITY_LEVEL = os.environ.get("MONITORING_TLS_SECURITY_LEVEL", "2")
 STABLE_TAG_PATTERN = re.compile(r"v(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)", re.ASCII)
 
 # SSH config for Cerbo (mounted from host or configured in container)
@@ -102,6 +103,19 @@ def update_inverter_control(tag: str) -> tuple:
         logger.warning("Rejected release tag with invalid format")
         return False, "Failed: invalid tag format"
 
+    if TLS_SECURITY_LEVEL not in ("2", "3"):
+        return False, "Failed: MONITORING_TLS_SECURITY_LEVEL must be 2 or 3"
+    # Strong profile is explicit: older device curl backends must not silently ignore it.
+    strong_preflight = ""
+    strong_options = ""
+    if TLS_SECURITY_LEVEL == "3":
+        strong_preflight = (
+            "CURL_VERSION=$(curl --version); "
+            'case "$CURL_VERSION" in *" OpenSSL/"*) ;; '
+            '*) echo "Strong TLS profile requires OpenSSL curl" >&2; exit 1 ;; esac; '
+        )
+        strong_options = "--disable --proxy '' --ciphers 'DEFAULT:@SECLEVEL=3' "
+
     # The `version` file in the package carries no "v" prefix (e.g. 1.18.13),
     # while GitHub tag_name does (v1.18.13). Normalize for the check below.
     version_expected = tag.removeprefix("v")
@@ -114,9 +128,12 @@ def update_inverter_control(tag: str) -> tuple:
         # treated as success - curl -sL would return exit 0 on HTTP 404).
         (
             "set -e; "
-            "DEPLOY=$(mktemp -d /data/.inverter-control-deploy.XXXXXX); "
+            + strong_preflight
+            + "DEPLOY=$(mktemp -d /data/.inverter-control-deploy.XXXXXX); "
             "trap 'rm -rf \"$DEPLOY\"' EXIT HUP INT TERM; "
-            f"curl -fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
+            "curl "
+            + strong_options
+            + f"-fsSL --proto '=https' --proto-redir '=https' --tlsv1.2 'https://codeload.github.com/victron-venus/inverter-control/tar.gz/refs/tags/{tag}' "
             '-o "$DEPLOY/source.tar.gz"; '
             'mkdir "$DEPLOY/source"; tar -xzf "$DEPLOY/source.tar.gz" -C "$DEPLOY/source" --strip-components=1; '
             'sh "$DEPLOY/source/update.sh"'
