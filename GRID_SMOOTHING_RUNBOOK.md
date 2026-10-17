@@ -1,25 +1,42 @@
 # Grid Smoothing Tuning Runbook
 
-End-to-end loop: analyzer → apply coefficients → verify → deploy → observe.
-Say **"follow GRID_SMOOTHING_RUNBOOK.md"** and execute this file top-to-bottom.
+Use this guide to inspect recorded grid data and evaluate the analyzer's legacy
+EMA model. Applying coefficients and deploying the controller are separate
+operator actions after checking that the model matches the installed version.
 
-Background: raw CT grid (`gt`) from the VM-3P75CT sawtooths around zero.
-inverter-control blends it with a Vue-derived estimate
-(`derived_gt = home_total − pv_total`) and EMAs the result. Coefficients are
-learned from data by `analysis/grid_correlation.py`, never guessed.
+## Model applicability
 
-## 1. Run analyzer (on the Synology NAS)
+[`analysis/grid_correlation.py`](analysis/grid_correlation.py) compares raw CT
+readings with a home-minus-PV estimate. It sweeps the legacy per-sample
+`GRID_SMOOTHING_DERIVED_ALPHA` and `EMA_ALPHA` settings on one-minute aggregates.
+Those aggregates cannot reproduce control-cycle timing or prove grid stability.
 
-SSH tunnel does NOT work (Synology sshd sets `AllowTcpForwarding no`) — run on
-the NAS itself:
+Current [inverter-control configuration](https://github.com/victron-venus/inverter-control/blob/main/inverter_control/config.py)
+defaults to background time-based filters: `GRID_FILTER_TAU=2.0` and
+`GRID_SMOOTHING_DERIVED_TAU=3.2`. Positive values replace the corresponding
+per-cycle alpha filters. The analyzer does not simulate those time constants;
+its printed alpha block is not a validated tuning recommendation for that path.
+Do not disable the time-based filters merely to apply the analyzer output.
+
+Check the installed version and settings before interpreting candidate rankings.
+The steps below that apply coefficients are for a deliberately selected legacy
+filter configuration, followed by a separately planned deployment and observation.
+
+## 1. Run analyzer on a host with InfluxDB access
+
+Run from the monitoring checkout on the host that can reach InfluxDB. The example
+uses its local loopback listener and privately managed `.env`; set the organization
+and bucket to match the installation. Remote access depends on the host's SSH
+policy; see [secure deployment](docs/secure-deployment.md#remote-access).
 
 ```bash
-ssh synology
-cd /volume1/docker/inverter-monitoring && git pull   # git missing on NAS → scp analysis/grid_correlation.py instead
-set -a; . ./.env; set +a                             # supplies INFLUX_TOKEN / org / bucket
+cd /path/to/inverter-monitoring
+set -a; . ./.env; set +a
 python3 analysis/grid_correlation.py --hours 24 \
-    --url http://localhost:8086 --token "$INFLUX_TOKEN"
+    --url http://localhost:8086 --org "$INFLUX_ORG" --bucket "$INFLUX_BUCKET"
 ```
+
+The analyzer reads `INFLUX_TOKEN` from the environment.
 
 Offline sanity mode (no InfluxDB): add `--demo`.
 
@@ -36,7 +53,9 @@ Night-time windows inflate near-zero% for every candidate — ranking degenerate
 
 ## 2. Apply block to inverter-control
 
-Append the printed block to `/Users/vmedvedev/victron/inverter-control/local_config.py`:
+After checking model applicability, replace the matching settings in your
+controller checkout's private `local_config.py`. Keep a copy of the previous
+values for rollback; do not append duplicate definitions:
 
 ```python
 ENABLE_GRID_SMOOTHING_WITH_HOME = True   # ← without this nothing changes
@@ -56,25 +75,26 @@ controller matches the simulation.
 ## 3. Verify consumption chain (local machine)
 
 ```bash
-cd /Users/vmedvedev/victron/inverter-control && python3 -c "
+cd /path/to/inverter-control && python3 -c "
 from inverter_control import config as c
 for k in ['ENABLE_GRID_SMOOTHING_WITH_HOME','GRID_SMOOTHING_HOME_WEIGHT',
-          'GRID_SMOOTHING_DERIVED_ALPHA','EMA_ALPHA']:
+          'GRID_SMOOTHING_DERIVED_ALPHA','EMA_ALPHA',
+          'GRID_FILTER_TAU','GRID_SMOOTHING_DERIVED_TAU']:
     assert getattr(c, k) is not None; print(k, '=', getattr(c, k))
 d = {k: getattr(c, k) for k in c.EXPORTED_KEYS}
 assert 'GRID_SMOOTHING_HOME_WEIGHT' in d and 'GRID_SMOOTHING_DERIVED_ALPHA' in d
 print('OK')"
 ```
 
-Must print exactly the local_config values (not defaults `False/0.7/0.1/0.3`).
-If defaults appear → values not wired; check `_import_local_config()` in
-`inverter_control/config.py` and that both `GRID_SMOOTHING_*` keys are in
-`EXPORTED_KEYS` (both were broken once and fixed 2026-08-23).
+Confirm that the values match the intended private configuration and revisit
+model applicability if either time constant is positive. This reads the local
+checkout, not the device's currently loaded configuration.
 
 ## 4. Deploy to Cerbo
 
 ```bash
-cd /Users/vmedvedev/victron/inverter-control && ./deploy.sh
+cd /path/to/inverter-control
+./deploy.sh your-cerbo-ssh-alias
 ```
 
 Ships whole working tree (uncommitted WIP included!) via tar over SSH, then runs
@@ -85,7 +105,7 @@ Expect `pushed local_config.py (PUSH_LOCAL_CONFIG=1)` and `Service status: up`.
 Spot-check on device:
 
 ```bash
-ssh Cerbo 'tail -12 /data/inverter-control/local_config.py'
+ssh your-cerbo-ssh-alias 'grep -E "^(ENABLE_GRID_SMOOTHING_WITH_HOME|GRID_SMOOTHING_HOME_WEIGHT|GRID_SMOOTHING_DERIVED_ALPHA|EMA_ALPHA|GRID_FILTER_TAU|GRID_SMOOTHING_DERIVED_TAU)[[:space:]]*=" /data/inverter-control/local_config.py'
 ```
 
 Note: release/webhook deploys WITHOUT `PUSH_LOCAL_CONFIG=1` preserve the
@@ -102,7 +122,8 @@ hours / a day:
   lower the weight.
 
 Re-run analyzer (it also reads stored `filtered_gt`) and repeat steps 2–5.
-Convergence usually takes 2–3 rounds.
+Candidate rankings are exploratory; no fixed number of iterations guarantees
+a stable or accurate controller.
 
 ## Gotchas (learned the hard way)
 
@@ -111,5 +132,6 @@ Convergence usually takes 2–3 rounds.
 - Raw grid lands in InfluxDB measurement `inverter` as field `grid_power`
   (json_v2 renames `gt`).
 - NAS system python 3.8 works for the analyzer (stdlib only); no pip needed.
-- If `filtered_gt ≡ raw` in the analyzer output → ENABLE flag off somewhere.
+- Identical recorded `filtered_gt` and raw values are a diagnostic clue, not
+  proof that a particular setting is disabled. Inspect the actual filter path.
 - First live windows after enabling the `vue` input are too short — see §1 table.

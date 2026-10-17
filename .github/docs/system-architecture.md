@@ -1,12 +1,17 @@
 # System Architecture
 
+See [the deployment guide](../../README.md#release-webhook-and-manual-deployment)
+and [access configuration](../../docs/secure-deployment.md) for current operating
+requirements. The optional authenticated webhook has automatic deployment
+disabled by default; push events do not deploy this stack.
+
 ## Data Flow Diagram
 
 ```mermaid
 flowchart TB
     subgraph VenusOS["Venus OS (Cerbo GX)"]
         INV_CTRL["inverter-control"]
-        ESP32["ESP32 BMS x8"]
+        ESP32["ESP32 BMS"]
         MQTT["MQTT Broker"]
     end
 
@@ -18,7 +23,7 @@ flowchart TB
     end
 
     subgraph Remote["Remote Access"]
-        WEB["Webhook\nAuto-deploy"]
+        WEB["Optional release webhook"]
     end
 
     INV_CTRL -->|"inverter/state"| MQTT
@@ -85,13 +90,18 @@ sequenceDiagram
 
 ## MQTT Topics Mapping
 
+These are the inputs configured in [telegraf.conf](../../telegraf.conf). The
+optional MPPT input expects normalized JSON on `mppt/+/state` with `power`,
+`voltage` and `current` fields. It needs a publisher that supplies that format;
+native Venus topics alone do not populate this input.
+
 ```mermaid
 graph TB
-    subgraph Topics["MQTT Topics"]
+    subgraph Topics["Configured Telegraf inputs"]
         INV["inverter/state<br/>Power, SOC, grid"]
-        BAT1["battery/+/+<br/>Chain 1 data"]
-        BAT2["battery2/+/+<br/>Chain 2 data"]
-        MPPT["N/+/solarcharger/+/+/<br/>MPPT data"]
+        BAT1["battery/sensor/+/state<br/>Chain 1 data"]
+        BAT2["battery2/sensor/+/state<br/>Chain 2 data"]
+        MPPT["mppt/+/state<br/>MPPT data"]
     end
 
     subgraph Influx["InfluxDB Measurements"]
@@ -117,7 +127,7 @@ graph TB
 - InfluxDB queries return empty
 
 **Actions:**
-\`\`\`bash
+```bash
 # Verify Telegraf is running
 docker ps | grep telegraf
 
@@ -129,7 +139,7 @@ docker exec telegraf mosquitto_sub -v -t "#"
 
 # Verify InfluxDB connectivity
 docker exec telegraf nc -zv influxdb 8086
-\`\`\`
+```
 
 ### High Memory Usage from Telegraf
 
@@ -138,15 +148,15 @@ docker exec telegraf nc -zv influxdb 8086
 - Telegraf container using excessive RAM
 
 **Actions:**
-\`\`\`bash
+```toml
 # Reduce Telegraf buffer size in telegraf.conf
 [agent]
   metric_buffer_limit = 1000
 
 # Or restrict collected topics
 [[inputs.mqtt_consumer]]
-  topics = ["inverter/state", "battery/+/+/state"]
-\`\`\`
+  topics = ["inverter/state", "battery/sensor/+/state"]
+```
 
 ### Grafana Dashboard Not Loading
 
@@ -155,7 +165,7 @@ docker exec telegraf nc -zv influxdb 8086
 - Timeout errors
 
 **Actions:**
-\`\`\`bash
+```bash
 # Check Grafana container
 docker ps | grep grafana
 docker logs grafana --tail 50
@@ -165,11 +175,11 @@ curl -s http://localhost:3000/api/datasources
 
 # Restart container
 docker restart grafana
-\`\`\`
+```
 
 ---
 
 ## Related Documentation
 
-- [inverter-control System Architecture](../inverter-control/.github/docs/system-architecture.md)
-- [ADR-001: Grid-Zero Architecture](../inverter-control/.github/docs/adr-001-grid-zero-architecture.md)
+- [inverter-control System Architecture](https://github.com/victron-venus/inverter-control/blob/main/.github/docs/system-architecture.md)
+- [ADR-001: Grid-Zero Architecture](https://github.com/victron-venus/inverter-control/blob/main/.github/docs/adr-001-grid-zero-architecture.md#adr-001-grid-zero-control-architecture)
