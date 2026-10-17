@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## [1.3.8] - 2026-10-17
 
 - Reject short webhook secrets and malformed authenticated payloads, and require the full allowed GitHub repository identity before deployment.
 - Require verified Ed25519 SSH identities and forward-secret authenticated encryption for optional device deployment.
