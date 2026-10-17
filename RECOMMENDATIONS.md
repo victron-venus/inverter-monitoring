@@ -1,9 +1,14 @@
-# Home & Grid Monitoring + Grid Smoothing Tuning Playbook
+# Historical v1.3.0 monitoring and tuning notes
 
-Operational guide for everything shipped in **v1.3.0** (`feat: Home & Grid monitoring +
-grid smoothing tuning loop (#38)`): where the new data lives, which Grafana panels to
-watch, how to run the smoothing-tuning feedback loop against inverter-control, and how
-deployment to the Synology stack works.
+This page records the **2026-08-23** rollout of v1.3.0 and its initial tuning
+proposal. Its measurements, completed checklist items and site observations apply
+to that rollout only. They do not establish the state of a current installation.
+
+For current operation, use [README.md](README.md),
+[secure deployment](docs/secure-deployment.md), and the
+[grid analysis runbook](GRID_SMOOTHING_RUNBOOK.md). The analyzer below models legacy
+per-sample EMA filters; current controller defaults use time-based filters that
+it does not simulate. Check applicability before using any proposed coefficients.
 
 ---
 
@@ -64,7 +69,7 @@ Dashboard **"Home & Grid Analysis"** (`uid home-grid-analysis`):
 The overview dashboard also gained an "Solar Forecast & Production" row (stats:
 Forecast Today/Tomorrow, Produced Today, Home Power Vue).
 
-## 3. Smoothing tuning loop (the core workflow)
+## 3. Historical legacy-EMA tuning proposal
 
 Background: the VM-3P75CT CT reading (`gt`) shows a sawtooth bias flipping above/below
 zero roughly every ~20 s. inverter-control blends it with the Vue-derived grid
@@ -89,8 +94,8 @@ filtered_gt  = ema(effective_gt, EMA_ALPHA)
    python3 analysis/grid_correlation.py --hours 24 \
        --url http://localhost:8086 --token "$INFLUX_TOKEN"
    ```
-   ⚠️ Do NOT try an SSH tunnel from your workstation: Synology sshd sets
-   `AllowTcpForwarding no` — connections through `-L` are reset.
+   The original Synology host disabled SSH forwarding. This was site-specific;
+   current access should follow [secure deployment](docs/secure-deployment.md).
    Offline sanity mode (no InfluxDB): add `--demo`.
 3. Read the report:
    - `fetched <key>: N minute buckets` + `time-intersection: M aligned buckets` — all
@@ -141,41 +146,15 @@ filtered_gt  = ema(effective_gt, EMA_ALPHA)
 | σ (stddev) | overall variance | low |
 | zero-crossing rate | sign flips per sample | diagnostic only (misleading when true grid ≈ 0 — prefer jitter) |
 
-## 4. Deployment to Synology (HeavenNAS)
+## 4. Deployment policy
 
-Two mechanisms exist:
-
-1. **Manual full deploy** — `./deploy.sh` (from a host with git + SSH access to the
-   NAS): clones/pulls `/volume1/docker/inverter-monitoring`, then
-   `docker-compose up -d`.
-2. **Auto-deploy webhook** — container `deploy-webhook` (port 9001) receives the
-   GitHub push event and runs `webhook/deploy-local.sh`, which:
-   - downloads latest `telegraf.conf` and `promtail.yml` from GitHub raw `main`,
-   - downloads every `grafana/dashboards/*.json` (listed via the GitHub contents API),
-   - restarts containers `telegraf`, `promtail` and `grafana`.
-
-   ⚠️ The script is baked into the webhook image (`DEPLOY_SCRIPT=/app/deploy-local.sh`),
-   so after changing it run once on the NAS:
-   ```bash
-   cd /volume1/docker/inverter-monitoring
-   sudo /usr/local/bin/docker-compose build webhook
-   sudo /usr/local/bin/docker-compose up -d webhook
-   ```
-   Until then the old image keeps deploying only telegraf.conf/promtail.yml.
-
-   Verified live 2026-08-23 (v1.3.0): merge at 15:11 PDT → telegraf.conf on NAS updated
-   same minute, telegraf restarted within a minute, `vue` measurement populating,
-   all four forecast/production fields present in the `inverter` measurement.
-   Grafana dashboards were copied manually that day (pre-fix gap).
-
-Useful paths/commands on the NAS (docker lives in `/usr/local/bin`, needs sudo):
-
-```bash
-ssh synology
-sudo /usr/local/bin/docker ps                       # container status
-sudo /usr/local/bin/docker logs telegraf --since 1h  # parse errors
-ls -la /volume1/docker/inverter-monitoring/grafana/dashboards/
-```
+The push-triggered deployment used during the historical rollout is retired.
+Current pushes to main, tag pushes and successful CI runs do not deploy the stack.
+Automatic deployment is disabled by default. The optional authenticated webhook
+accepts an explicitly enabled stable-release rollout as described in the
+[current deployment guide](README.md#release-webhook-and-manual-deployment).
+Use that guide for deployment and rollback instead of the former raw-main
+configuration download procedure.
 
 ## 5. Post-release verification checklist
 
@@ -191,10 +170,11 @@ Status after v1.3.0 (checked 2026-08-23, ~30 min post-merge):
       `filtered_gt`, `setpoint`. Note: raw grid is stored as **`grid_power`** here —
       the json_v2 input renames `gt`; the plain `gt` name only exists in `vue`.
 - [x] Grafana serves dashboard `home-grid-analysis` (dashboards scp'ed manually;
-      webhook now handles this going forward once the image is rebuilt)
+      historical webhook configuration applied only to that rollout)
 - [ ] Panels render non-empty for last 6 h — eyeball in browser after a few hours
 
-Repeat these checks after every release that touches `telegraf.conf` or dashboards.
+These checkmarks describe the 2026-08-23 rollout. Record fresh observations for
+each later installation; do not carry forward its acceptance result.
 
 ## 6. First tuning round — status and expectations
 
