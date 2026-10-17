@@ -90,9 +90,14 @@ sequenceDiagram
 
 ## MQTT Topics Mapping
 
+These are the inputs configured in [telegraf.conf](../../telegraf.conf). The
+optional MPPT input expects normalized JSON on `mppt/+/state` with `power`,
+`voltage` and `current` fields. It needs a publisher that supplies that format;
+native Venus topics alone do not populate this input.
+
 ```mermaid
 graph TB
-    subgraph Topics["MQTT Topics"]
+    subgraph Topics["Configured Telegraf inputs"]
         INV["inverter/state<br/>Power, SOC, grid"]
         BAT1["battery/sensor/+/state<br/>Chain 1 data"]
         BAT2["battery2/sensor/+/state<br/>Chain 2 data"]
