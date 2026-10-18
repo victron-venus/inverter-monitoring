@@ -12,6 +12,12 @@
 Telegraf + InfluxDB + Grafana monitoring for Victron inverter system.
 
 <!-- ci-release-process:start -->
+[![Grafana dashboard layout with synthetic demonstration data; this is not live installation telemetry. Click for the original screenshot.](docs/images/app-hero.png)](docs/images/monitoring-demo.jpg)
+
+*Grafana dashboard layout with synthetic demonstration data; this is not live installation telemetry. Click for the original screenshot.*
+
+[Image source and regeneration](docs/images/README.md).
+
 ## Release process
 
 See the [release strategy](RELEASING.md) for validation, nightly, beta, RC and stable promotion rules, and the [operator runbook](docs/release-workflow.md) for local commands.
