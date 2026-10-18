@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Route Dependabot metadata approval through the trusted default branch while preserving the existing author and review policy.
 - Refresh the documented Grafana preview and pinned shared CI workflows.
 
 ### Upgrade
