@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.10] - 2026-10-23
+
+### Security
+
+- Upgrade the webhook image and CI installer to uv 0.13.4, removing the distrusted emSign ECC Root CA - G3 from the bundled certificate store (GHSA-hq85-5cpj-mr62).
+
+### Upgrade
+
+Rebuild the webhook image to receive the corrected installer. Preserve existing configuration and data; no application dependency or configuration migration is required. Keep the previous immutable image available for rollback.
+
 ## [1.3.9] - 2026-10-18
 
 ### Changed
