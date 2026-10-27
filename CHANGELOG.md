@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.11] - 2026-10-27
+
+### Changed
+
+- Update the locked MarkupSafe runtime dependency to 3.0.4 and refresh the pinned Python webhook container image.
+- Preserve existing monitoring and webhook configuration.
+
 ## [1.3.10] - 2026-10-23
 
 ### Security
