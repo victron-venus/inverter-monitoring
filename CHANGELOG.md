@@ -6,6 +6,15 @@
 
 - Update the locked MarkupSafe runtime dependency to 3.0.4 and refresh the pinned Python webhook container image.
 - Preserve existing monitoring and webhook configuration.
+- Publish candidate assets against the known release ID and wait for Release gate propagation within the existing timeout, while rejecting mismatched or failed validation.
+
+### Upgrade
+
+Use the existing installation procedure and preserve local configuration and persistent volumes. Rebuild the optional webhook image to receive the locked dependency and base-image updates. No configuration migration is required. Keep the previous immutable release or image available for rollback; publishing this release does not deploy it.
+
+### Security
+
+Existing webhook authentication, transport verification and release-validation requirements remain in force. The dependency and image refresh does not claim to fix a newly identified application vulnerability. Candidate publication continues to reject failed checks, ambiguous release gates and unverified asset bytes; this beta does not establish physical-device acceptance.
 
 ## [1.3.10] - 2026-10-23
 
