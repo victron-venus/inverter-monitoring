@@ -5,11 +5,23 @@ InfluxDB, so their password storage is part of this project's assessment even
 though the implementations are upstream. The webhook instead verifies delivery
 HMACs; an HMAC secret is not a stored password verifier.
 
-## Reviewed versions
+## Current pinned images
 
-`docker-compose.yml` pins the following official multi-platform images. On
-2026-10-16 these were exactly the images selected by the former `latest` and
-`2.7` tags; pinning does not start or upgrade any running container.
+`docker-compose.yml` pins the following official multi-platform images:
+
+- Grafana `13.3.1`, manifest
+  `sha256:0615ec4fbd4072004b7d86b46ded63013a74b7d6eb1119273dd89e8fa25c13cf`.
+- InfluxDB `2.9.1`, manifest
+  `sha256:e4572d094ac3272f06528ea904ce6b4cb3bb19be2db3b3b1acbd27ba5c3a73e2`.
+
+Updating these source pins does not start or upgrade a running container.
+The configuration checks cover credentials and service wiring; they do not
+repeat the upstream password implementation review below for these newer images.
+
+## Historical password implementation review
+
+The source review on 2026-10-16 covered these earlier images, then selected by
+the former `latest` and `2.7` tags:
 
 - Grafana `13.2.4`, manifest
   `sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f`.
