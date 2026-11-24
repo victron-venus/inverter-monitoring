@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.12] - Unreleased
+
+### Changed
+
+- keep local instruction files out of git.
+- add a navigation index for docs/.
+- add line-ending and language attributes.
+- isolate every auto-merge base edit (#189).
+- preserve merge identity and withdrawn auto-merge requests (#188).
+- validate the toolkit before scope regeneration (#185).
+- limit documentation pull requests to relevant checks (#184).
+- Migrate dependency updates to Renovate (#183).
+- reconcile lost creation responses (#181).
+- release failed read buffers and isolate retry tests (#179).
+
+### Upgrade
+
+Use the existing installation procedure and preserve local configuration and persistent volumes. Rebuild the optional webhook image to receive the locked dependency and base-image updates. No configuration migration is required. Keep the previous immutable release or image available for rollback; publishing this release does not deploy it.
+
+### Security
+
+Existing webhook authentication, transport verification and release-validation requirements remain in force. The dependency and image refresh does not claim to fix a newly identified application vulnerability. Candidate publication continues to reject failed checks, ambiguous release gates and unverified asset bytes; this beta does not establish physical-device acceptance.
+
 ## [1.3.11] - 2026-10-27
 
 ### Changed
